@@ -3,7 +3,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
+import { AuthModule } from './auth/auth.module';
+import { BootstrapModule } from './bootstrap/bootstrap.module';
 import { HealthModule } from './health/health.module';
+import { MailModule } from './mail/mail.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +24,10 @@ import { HealthModule } from './health/health.module';
         uri: config.get<string>('app.mongodbUri'),
       }),
     }),
+    MailModule,
+    UsersModule,
+    AuthModule,
+    BootstrapModule,
     HealthModule,
   ],
 })
