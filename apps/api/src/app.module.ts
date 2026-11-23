@@ -5,8 +5,10 @@ import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
 import { BootstrapModule } from './bootstrap/bootstrap.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -25,8 +27,10 @@ import { UsersModule } from './users/users.module';
       }),
     }),
     MailModule,
+    StorageModule,
     UsersModule,
     AuthModule,
+    CatalogModule,
     BootstrapModule,
     HealthModule,
   ],

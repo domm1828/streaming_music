@@ -9,6 +9,7 @@ export const PERMISSIONS = {
   USERS_DELETE: 'users.delete',
   USERS_BAN: 'users.ban',
   USERS_IMPERSONATE: 'users.impersonate',
+  CATALOG_MANAGE: 'catalog.manage',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
