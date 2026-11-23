@@ -151,4 +151,11 @@ export class TracksService {
   async incrementPlays(id: string): Promise<void> {
     await this.model.updateOne({ _id: id }, { $inc: { plays: 1 } }).exec();
   }
+
+  /** Duración en segundos de una pista (0 si no existe). */
+  async getDurationSeconds(id: string): Promise<number> {
+    if (!Types.ObjectId.isValid(id)) return 0;
+    const track = await this.model.findById(id).select('duration').lean().exec();
+    return track?.duration ?? 0;
+  }
 }

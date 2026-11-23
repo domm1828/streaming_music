@@ -17,11 +17,23 @@ export function WebPlayerLayout() {
           <Link to="/browse" className="text-sm opacity-80 hover:opacity-100">
             Explorar
           </Link>
-          <div className="ml-auto text-sm">
+          {isAuthenticated && (
+            <Link to="/library" className="text-sm opacity-80 hover:opacity-100">
+              Tu biblioteca
+            </Link>
+          )}
+          <div className="ml-auto flex items-center gap-3 text-sm">
             {isAuthenticated ? (
-              <Link to="/account" className="rounded-lg bg-brand-primary px-3 py-1.5 font-medium text-white">
-                {user?.name}
-              </Link>
+              <>
+                {user && (
+                  <Link to={`/u/${user.username}`} className="opacity-80 hover:opacity-100">
+                    Perfil
+                  </Link>
+                )}
+                <Link to="/account" className="rounded-lg bg-brand-primary px-3 py-1.5 font-medium text-white">
+                  {user?.name}
+                </Link>
+              </>
             ) : (
               <Link to="/login" className="font-medium text-brand-secondary hover:underline">
                 Iniciar sesión
