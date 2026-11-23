@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router';
 import { useAuth } from '../auth/use-auth';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 
@@ -25,14 +26,15 @@ export function WebPlayerLayout() {
               Tu biblioteca
             </Link>
           )}
-          {hasPermission('content.manage') && (
-            <Link to="/admin/import" className="text-sm opacity-80 hover:opacity-100">
-              Importar
-            </Link>
-          )}
           <div className="ml-auto flex items-center gap-3 text-sm">
             {isAuthenticated ? (
               <>
+                <NotificationBell />
+                {hasPermission('content.manage') && (
+                  <Link to="/admin" className="opacity-80 hover:opacity-100">
+                    Admin
+                  </Link>
+                )}
                 {user && (
                   <Link to={`/u/${user.username}`} className="opacity-80 hover:opacity-100">
                     Perfil

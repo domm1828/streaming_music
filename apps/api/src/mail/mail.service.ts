@@ -36,6 +36,10 @@ export class MailService {
     );
   }
 
+  async sendNotification(to: string, title: string, body: string): Promise<void> {
+    await this.send(to, title, body);
+  }
+
   private async send(to: string, subject: string, text: string): Promise<void> {
     try {
       await this.transporter.sendMail({ from: this.from, to, subject, text });

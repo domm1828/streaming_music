@@ -92,6 +92,10 @@ export class User {
 
   @Prop({ default: 0 })
   followingCount!: number;
+
+  /** Perfiles de artista reclamados/aprobados para esta cuenta (backstage). */
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Artist' }], default: [] })
+  artistIds!: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
