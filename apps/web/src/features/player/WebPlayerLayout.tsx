@@ -4,7 +4,7 @@ import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 
 export function WebPlayerLayout() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, hasPermission } = useAuth();
 
   return (
     <div className="min-h-full pb-24">
@@ -23,6 +23,11 @@ export function WebPlayerLayout() {
           {isAuthenticated && (
             <Link to="/library" className="text-sm opacity-80 hover:opacity-100">
               Tu biblioteca
+            </Link>
+          )}
+          {hasPermission('content.manage') && (
+            <Link to="/admin/import" className="text-sm opacity-80 hover:opacity-100">
+              Importar
             </Link>
           )}
           <div className="ml-auto flex items-center gap-3 text-sm">

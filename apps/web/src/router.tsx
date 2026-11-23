@@ -12,7 +12,9 @@ import { ProfileEditPage } from './pages/ProfileEditPage';
 import { SearchPage } from './pages/SearchPage';
 import { RadioPage } from './pages/RadioPage';
 import { LandingPage } from './pages/LandingPage';
+import { AdminImportPage } from './pages/AdminImportPage';
 import { AccountPage } from './pages/AccountPage';
+import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -55,6 +57,14 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <ProfileEditPage />
           </RequireAuth>
+        ),
+      },
+      {
+        path: '/admin/import',
+        element: (
+          <RequirePermission permission="content.manage">
+            <AdminImportPage />
+          </RequirePermission>
         ),
       },
     ],

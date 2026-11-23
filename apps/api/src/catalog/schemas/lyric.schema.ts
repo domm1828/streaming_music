@@ -15,6 +15,10 @@ export class Lyric {
   /** True si la letra está sincronizada con el tiempo (formato LRC). */
   @Prop({ default: false })
   isSynced!: boolean;
+
+  /** Fuente de la que se obtuvo (proveedor externo o 'manual'). */
+  @Prop({ type: String, default: 'manual' })
+  source!: string;
 }
 
 export const LyricSchema = SchemaFactory.createForClass(Lyric);
