@@ -125,6 +125,15 @@ export class UsersService {
     if (res.deletedCount === 0) throw new NotFoundException('Usuario no encontrado');
   }
 
+  async setRoles(id: string, roleIds: string[]) {
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { roles: roleIds.map((r) => new Types.ObjectId(r)) }, { new: true })
+      .populate<{ roles: Role[] }>('roles')
+      .exec();
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
+
   async setBanned(id: string, banned: boolean) {
     const user = await this.userModel
       .findByIdAndUpdate(id, { bannedAt: banned ? new Date() : null }, { new: true })

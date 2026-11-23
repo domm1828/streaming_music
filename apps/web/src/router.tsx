@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, Navigate } from 'react-router';
 import { WebPlayerLayout } from './features/player/WebPlayerLayout';
 import { HomePage } from './pages/HomePage';
 import { BrowsePage } from './pages/BrowsePage';
@@ -13,6 +13,9 @@ import { SearchPage } from './pages/SearchPage';
 import { RadioPage } from './pages/RadioPage';
 import { LandingPage } from './pages/LandingPage';
 import { AdminImportPage } from './pages/AdminImportPage';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminCatalogPage } from './pages/admin/AdminCatalogPage';
 import { AccountPage } from './pages/AccountPage';
 import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
@@ -60,12 +63,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '/admin/import',
+        path: '/admin',
         element: (
           <RequirePermission permission="content.manage">
-            <AdminImportPage />
+            <AdminLayout />
           </RequirePermission>
         ),
+        children: [
+          { index: true, element: <Navigate to="/admin/users" replace /> },
+          { path: 'users', element: <AdminUsersPage /> },
+          { path: 'catalog', element: <AdminCatalogPage /> },
+          { path: 'import', element: <AdminImportPage /> },
+        ],
       },
     ],
   },

@@ -12,23 +12,47 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { IsArray, IsMongoId } from 'class-validator';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { PERMISSIONS } from '../auth/rbac/permissions';
 import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { RolesService } from './roles.service';
 import { UsersService } from './users.service';
+
+class SetRolesDto {
+  @IsArray()
+  @IsMongoId({ each: true })
+  roleIds!: string[];
+}
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   @Get()
   @RequirePermissions(PERMISSIONS.USERS_VIEW)
   list(@Query() query: ListUsersDto) {
     return this.usersService.list(query.page, query.perPage, query.search);
+  }
+
+  /** Lista de roles disponibles (para asignar). */
+  @Get('roles/all')
+  @RequirePermissions(PERMISSIONS.USERS_VIEW)
+  roles() {
+    return this.rolesService.findAll();
+  }
+
+  @Patch(':id/roles')
+  @RequirePermissions(PERMISSIONS.USERS_UPDATE)
+  setRoles(@Param('id') id: string, @Body() dto: SetRolesDto) {
+    return this.usersService.setRoles(id, dto.roleIds);
   }
 
   @Get(':id')
