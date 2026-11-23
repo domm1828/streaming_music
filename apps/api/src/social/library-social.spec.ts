@@ -1,5 +1,6 @@
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule, getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Connection, Model, Types } from 'mongoose';
@@ -47,6 +48,7 @@ describe('Library & Social (e2e, in-memory Mongo)', () => {
     moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+        EventEmitterModule.forRoot(),
         MongooseModule.forRoot(mongod.getUri()),
         StorageModule,
         UsersModule,

@@ -28,11 +28,19 @@ export interface FeaturesConfig {
   listenMinutesLimit: number;
 }
 
+export interface SearchConfig {
+  /** 'auto' usa Meilisearch si está configurado/accesible, si no cae a Mongo. */
+  driver: 'auto' | 'meili' | 'mongo';
+  meiliHost: string;
+  meiliKey: string;
+}
+
 export default (): {
   app: AppConfig;
   jwt: JwtConfig;
   mail: MailConfig;
   features: FeaturesConfig;
+  search: SearchConfig;
 } => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -56,5 +64,10 @@ export default (): {
   },
   features: {
     listenMinutesLimit: parseInt(process.env.LISTEN_MINUTES_LIMIT ?? '0', 10),
+  },
+  search: {
+    driver: (process.env.SEARCH_DRIVER as 'auto' | 'meili' | 'mongo') ?? 'auto',
+    meiliHost: process.env.MEILI_HOST ?? '',
+    meiliKey: process.env.MEILI_MASTER_KEY ?? '',
   },
 });

@@ -17,6 +17,9 @@ export function WebPlayerLayout() {
           <Link to="/browse" className="text-sm opacity-80 hover:opacity-100">
             Explorar
           </Link>
+          <Link to="/search" className="text-sm opacity-80 hover:opacity-100">
+            Buscar
+          </Link>
           {isAuthenticated && (
             <Link to="/library" className="text-sm opacity-80 hover:opacity-100">
               Tu biblioteca
