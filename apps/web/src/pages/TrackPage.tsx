@@ -1,0 +1,57 @@
+import { Link, useParams } from 'react-router';
+import { useTrack } from '../features/catalog/catalog-queries';
+import { Button } from '../components/ui';
+import { usePlayerStore } from '../features/player/player-store';
+
+export function TrackPage() {
+  const { id = '' } = useParams();
+  const { data, isLoading, isError } = useTrack(id);
+  const { playTrack } = usePlayerStore.getState();
+
+  if (isLoading) return <p className="opacity-60">Cargando…</p>;
+  if (isError || !data) return <p className="text-red-500">Pista no encontrada.</p>;
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-end gap-6">
+        <div className="h-40 w-40 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent" />
+        <div>
+          <p className="text-sm uppercase tracking-wide opacity-60">Pista</p>
+          <h1 className="text-4xl font-bold">{data.name}</h1>
+          <p className="mt-1 opacity-70">
+            {data.artists?.map((a, i) => (
+              <span key={a.artist._id}>
+                {i > 0 && ', '}
+                <Link to={`/artist/${a.artist._id}`} className="hover:underline">
+                  {a.artist.name}
+                </Link>
+              </span>
+            ))}
+            {data.album && (
+              <>
+                {' · '}
+                <Link to={`/album/${data.album._id}`} className="hover:underline">
+                  {data.album.name}
+                </Link>
+              </>
+            )}
+          </p>
+          <div className="mt-4 w-40">
+            <Button type="button" onClick={() => playTrack(data)}>
+              ▶ Reproducir
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {data.lyric ? (
+        <section className="rounded-2xl border border-brand-secondary/20 bg-brand-primary/5 p-6">
+          <h2 className="mb-3 text-lg font-semibold">Letra</h2>
+          <pre className="whitespace-pre-wrap font-sans text-sm opacity-80">{data.lyric.text}</pre>
+        </section>
+      ) : (
+        <p className="opacity-60">Esta pista no tiene letra.</p>
+      )}
+    </div>
+  );
+}

@@ -1,9 +1,13 @@
+import { join } from 'node:path';
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
   mongodbUri: string;
   corsOrigin: string;
   appUrl: string;
+  uploadsDir: string;
+  uploadsPublicPath: string;
 }
 
 export interface JwtConfig {
@@ -26,6 +30,8 @@ export default (): { app: AppConfig; jwt: JwtConfig; mail: MailConfig } => ({
     mongodbUri: process.env.MONGODB_URI ?? 'mongodb://localhost:27017/stream_music',
     corsOrigin: process.env.CORS_ORIGIN ?? '*',
     appUrl: process.env.APP_URL ?? 'http://localhost:5173',
+    uploadsDir: process.env.STORAGE_DIR ?? join(process.cwd(), 'storage'),
+    uploadsPublicPath: '/uploads',
   },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret',

@@ -1,55 +1,47 @@
 import { Link } from 'react-router';
-import { useHealth } from '../features/health/use-health';
-import { useAuth } from '../features/auth/use-auth';
+import { useArtists } from '../features/catalog/catalog-queries';
 
 export function HomePage() {
-  const { data, isLoading, isError } = useHealth();
-  const { isAuthenticated, user } = useAuth();
+  const { data } = useArtists();
 
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center gap-8 px-4 py-16">
-      <nav className="flex w-full justify-end gap-3 text-sm">
-        {isAuthenticated ? (
-          <Link to="/account" className="rounded-lg bg-brand-primary px-4 py-2 font-medium text-white">
-            {user?.name}
+    <div className="space-y-10">
+      <section className="rounded-3xl bg-gradient-to-br from-brand-primary to-brand-secondary px-8 py-14 text-white">
+        <h1 className="text-4xl font-bold">Tu música, sin límites.</h1>
+        <p className="mt-3 max-w-lg text-white/80">
+          Descubrí artistas, armá tu biblioteca y escuchá lo que quieras en Stream Music.
+        </p>
+        <Link
+          to="/browse"
+          className="mt-6 inline-block rounded-lg bg-brand-accent px-5 py-2.5 font-semibold text-brand-primary-dark"
+        >
+          Explorar
+        </Link>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Artistas</h2>
+          <Link to="/browse" className="text-sm text-brand-secondary hover:underline">
+            Ver todo
           </Link>
-        ) : (
-          <>
-            <Link to="/login" className="rounded-lg px-4 py-2 font-medium text-brand-secondary hover:underline">
-              Iniciar sesión
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+          {data?.data.slice(0, 10).map((artist) => (
+            <Link
+              key={artist._id}
+              to={`/artist/${artist._id}`}
+              className="rounded-xl border border-brand-secondary/15 bg-brand-primary/5 p-3 hover:border-brand-secondary/40"
+            >
+              <div className="mb-2 aspect-square rounded-lg bg-gradient-to-br from-brand-primary to-brand-secondary" />
+              <p className="truncate text-sm font-medium">{artist.name}</p>
             </Link>
-            <Link to="/register" className="rounded-lg bg-brand-primary px-4 py-2 font-medium text-white">
-              Crear cuenta
-            </Link>
-          </>
-        )}
-      </nav>
-
-      <header className="text-center">
-        <h1 className="text-5xl font-bold tracking-tight">
-          <span className="text-brand-primary">Stream</span> <span className="text-brand-accent">Music</span>
-        </h1>
-        <p className="mt-3 text-lg opacity-70">Tu plataforma de streaming musical.</p>
-      </header>
-
-      <div className="flex gap-3">
-        <span className="h-10 w-10 rounded-full bg-brand-primary" title="primary #2d5a34" />
-        <span className="h-10 w-10 rounded-full bg-brand-secondary" title="secondary #4e8c56" />
-        <span className="h-10 w-10 rounded-full bg-brand-accent" title="accent #f5b31e" />
-      </div>
-
-      <section className="w-full rounded-2xl border border-brand-secondary/30 bg-brand-primary/5 p-6">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide opacity-60">Estado de la API</h2>
-        {isLoading && <p>Consultando…</p>}
-        {isError && <p className="text-red-500">No se pudo conectar con la API.</p>}
-        {data && (
-          <ul className="space-y-1 font-mono text-sm">
-            <li>servicio: {data.service}</li>
-            <li>estado: {data.status}</li>
-            <li>base de datos: {data.database}</li>
-          </ul>
+          ))}
+        </div>
+        {data && data.data.length === 0 && (
+          <p className="opacity-60">Todavía no hay artistas. Cargá contenido desde la API.</p>
         )}
       </section>
-    </main>
+    </div>
   );
 }
