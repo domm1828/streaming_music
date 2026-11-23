@@ -8,6 +8,9 @@ import { BootstrapModule } from './bootstrap/bootstrap.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { PlaylistsModule } from './playlists/playlists.module';
+import { ProfilesModule } from './profiles/profiles.module';
+import { SocialModule } from './social/social.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 
@@ -31,6 +34,9 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     CatalogModule,
+    PlaylistsModule,
+    SocialModule,
+    ProfilesModule,
     BootstrapModule,
     HealthModule,
   ],

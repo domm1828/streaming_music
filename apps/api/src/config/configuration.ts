@@ -23,7 +23,17 @@ export interface MailConfig {
   from: string;
 }
 
-export default (): { app: AppConfig; jwt: JwtConfig; mail: MailConfig } => ({
+export interface FeaturesConfig {
+  /** Límite mensual de minutos de escucha. 0 = ilimitado. */
+  listenMinutesLimit: number;
+}
+
+export default (): {
+  app: AppConfig;
+  jwt: JwtConfig;
+  mail: MailConfig;
+  features: FeaturesConfig;
+} => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.PORT ?? '3000', 10),
@@ -43,5 +53,8 @@ export default (): { app: AppConfig; jwt: JwtConfig; mail: MailConfig } => ({
     host: process.env.MAIL_HOST ?? 'localhost',
     port: parseInt(process.env.MAIL_PORT ?? '1025', 10),
     from: process.env.MAIL_FROM ?? 'Stream Music <no-reply@streammusic.local>',
+  },
+  features: {
+    listenMinutesLimit: parseInt(process.env.LISTEN_MINUTES_LIMIT ?? '0', 10),
   },
 });

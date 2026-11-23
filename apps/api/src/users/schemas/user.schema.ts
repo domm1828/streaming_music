@@ -17,6 +17,17 @@ export class TwoFactor {
 }
 const TwoFactorSchema = SchemaFactory.createForClass(TwoFactor);
 
+/** Enlace social/web del perfil público. */
+@Schema({ _id: false })
+export class ProfileLink {
+  @Prop({ required: true, trim: true })
+  label!: string;
+
+  @Prop({ required: true, trim: true })
+  url!: string;
+}
+const ProfileLinkSchema = SchemaFactory.createForClass(ProfileLink);
+
 @Schema({ timestamps: true, collection: 'users' })
 export class User {
   @Prop({ required: true, trim: true })
@@ -61,6 +72,26 @@ export class User {
 
   @Prop({ type: TwoFactorSchema, default: () => ({}) })
   twoFactor!: TwoFactor;
+
+  // --- Perfil público ---
+  @Prop({ type: String, default: null })
+  bio!: string | null;
+
+  @Prop({ type: String, default: null })
+  coverImage!: string | null;
+
+  @Prop({ type: String, default: null })
+  country!: string | null;
+
+  @Prop({ type: [ProfileLinkSchema], default: [] })
+  links!: ProfileLink[];
+
+  /** Contadores desnormalizados que se mantienen al seguir/dejar de seguir. */
+  @Prop({ default: 0 })
+  followersCount!: number;
+
+  @Prop({ default: 0 })
+  followingCount!: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

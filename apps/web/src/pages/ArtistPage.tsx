@@ -3,6 +3,8 @@ import { useArtist, useArtistAlbums, useArtistTracks } from '../features/catalog
 import { TrackList } from '../features/catalog/TrackList';
 import { Button } from '../components/ui';
 import { usePlayerStore } from '../features/player/player-store';
+import { FollowButton } from '../features/social/FollowButton';
+import { LikeButton } from '../features/social/LikeButton';
 
 export function ArtistPage() {
   const { id = '' } = useParams();
@@ -21,14 +23,18 @@ export function ArtistPage() {
         <div>
           <h1 className="text-4xl font-bold">{artist.data.name}</h1>
           {artist.data.bio && <p className="mt-2 max-w-xl text-sm opacity-70">{artist.data.bio}</p>}
-          <div className="mt-4 w-40">
-            <Button
-              type="button"
-              onClick={() => tracks.data && playQueue(tracks.data.data, 0)}
-              disabled={!tracks.data?.data.length}
-            >
-              ▶ Reproducir
-            </Button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="w-40">
+              <Button
+                type="button"
+                onClick={() => tracks.data && playQueue(tracks.data.data, 0)}
+                disabled={!tracks.data?.data.length}
+              >
+                ▶ Reproducir
+              </Button>
+            </div>
+            <FollowButton type="artist" id={id} />
+            <LikeButton type="artist" id={id} label />
           </div>
         </div>
       </header>

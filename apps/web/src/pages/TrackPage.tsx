@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router';
 import { useTrack } from '../features/catalog/catalog-queries';
 import { Button } from '../components/ui';
 import { usePlayerStore } from '../features/player/player-store';
+import { LikeButton } from '../features/social/LikeButton';
+import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
 
 export function TrackPage() {
   const { id = '' } = useParams();
@@ -36,10 +38,14 @@ export function TrackPage() {
               </>
             )}
           </p>
-          <div className="mt-4 w-40">
-            <Button type="button" onClick={() => playTrack(data)}>
-              ▶ Reproducir
-            </Button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="w-40">
+              <Button type="button" onClick={() => playTrack(data)}>
+                ▶ Reproducir
+              </Button>
+            </div>
+            <LikeButton type="track" id={data._id} label />
+            <AddToPlaylist trackId={data._id} />
           </div>
         </div>
       </header>

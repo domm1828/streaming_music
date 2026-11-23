@@ -37,7 +37,7 @@ export class Track {
   @Prop({ type: String, default: null })
   src!: string | null;
 
-  @Prop({ required: true, enum: ['audio', 'youtube', 'hls', 'external'], default: 'audio' })
+  @Prop({ type: String, required: true, enum: ['audio', 'youtube', 'hls', 'external'], default: 'audio' })
   srcType!: TrackSrcType;
 
   @Prop({ type: String, default: null })

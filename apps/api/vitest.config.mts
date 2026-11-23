@@ -7,6 +7,9 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
     setupFiles: ['reflect-metadata'],
+    // El primer arranque de mongodb-memory-server puede descargar el binario de mongod.
+    testTimeout: 20000,
+    hookTimeout: 120000,
   },
   plugins: [
     // Compila TS con metadatos de decoradores para la DI de NestJS.

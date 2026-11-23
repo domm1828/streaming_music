@@ -5,6 +5,10 @@ import { BrowsePage } from './pages/BrowsePage';
 import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { TrackPage } from './pages/TrackPage';
+import { LibraryPage } from './pages/LibraryPage';
+import { PlaylistPage } from './pages/PlaylistPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { ProfileEditPage } from './pages/ProfileEditPage';
 import { AccountPage } from './pages/AccountPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -22,11 +26,29 @@ export const router = createBrowserRouter([
       { path: '/artist/:id', element: <ArtistPage /> },
       { path: '/album/:id', element: <AlbumPage /> },
       { path: '/track/:id', element: <TrackPage /> },
+      { path: '/playlist/:id', element: <PlaylistPage /> },
+      { path: '/u/:username', element: <ProfilePage /> },
+      {
+        path: '/library',
+        element: (
+          <RequireAuth>
+            <LibraryPage />
+          </RequireAuth>
+        ),
+      },
       {
         path: '/account',
         element: (
           <RequireAuth>
             <AccountPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/account/profile',
+        element: (
+          <RequireAuth>
+            <ProfileEditPage />
           </RequireAuth>
         ),
       },

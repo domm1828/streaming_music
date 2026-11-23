@@ -39,6 +39,10 @@ export class Artist {
   @Prop({ default: 0 })
   views!: number;
 
+  /** Seguidores dentro de la plataforma (distinto de spotifyFollowers). */
+  @Prop({ default: 0 })
+  followers!: number;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: Genre.name }], default: [] })
   genres!: Types.ObjectId[];
 

@@ -6,6 +6,7 @@ import { Genre, GenreSchema } from './schemas/genre.schema';
 import { Lyric, LyricSchema } from './schemas/lyric.schema';
 import { Track, TrackSchema } from './schemas/track.schema';
 import { TrackPlay, TrackPlaySchema } from './schemas/track-play.schema';
+import { ListenUsage, ListenUsageSchema } from './schemas/listen-usage.schema';
 import { AudioService } from './audio.service';
 import { AlbumsService } from './albums.service';
 import { ArtistsService } from './artists.service';
@@ -28,6 +29,7 @@ import { TracksController } from './tracks.controller';
       { name: Track.name, schema: TrackSchema },
       { name: Lyric.name, schema: LyricSchema },
       { name: TrackPlay.name, schema: TrackPlaySchema },
+      { name: ListenUsage.name, schema: ListenUsageSchema },
     ]),
   ],
   providers: [

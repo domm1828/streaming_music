@@ -3,6 +3,7 @@ import { useAlbum } from '../features/catalog/catalog-queries';
 import { TrackList } from '../features/catalog/TrackList';
 import { Button } from '../components/ui';
 import { usePlayerStore } from '../features/player/player-store';
+import { LikeButton } from '../features/social/LikeButton';
 
 export function AlbumPage() {
   const { id = '' } = useParams();
@@ -30,10 +31,13 @@ export function AlbumPage() {
               </span>
             ))}
           </p>
-          <div className="mt-4 w-40">
-            <Button type="button" onClick={() => playQueue(tracks, 0)} disabled={!tracks.length}>
-              ▶ Reproducir
-            </Button>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="w-40">
+              <Button type="button" onClick={() => playQueue(tracks, 0)} disabled={!tracks.length}>
+                ▶ Reproducir
+              </Button>
+            </div>
+            <LikeButton type="album" id={data._id} label />
           </div>
         </div>
       </header>
