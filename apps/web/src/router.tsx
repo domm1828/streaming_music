@@ -9,6 +9,9 @@ import { LibraryPage } from './pages/LibraryPage';
 import { PlaylistPage } from './pages/PlaylistPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProfileEditPage } from './pages/ProfileEditPage';
+import { SearchPage } from './pages/SearchPage';
+import { RadioPage } from './pages/RadioPage';
+import { LandingPage } from './pages/LandingPage';
 import { AccountPage } from './pages/AccountPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -23,6 +26,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/browse', element: <BrowsePage /> },
+      { path: '/search', element: <SearchPage /> },
+      { path: '/radio', element: <RadioPage /> },
       { path: '/artist/:id', element: <ArtistPage /> },
       { path: '/album/:id', element: <AlbumPage /> },
       { path: '/track/:id', element: <TrackPage /> },
@@ -54,6 +59,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  { path: '/welcome', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },

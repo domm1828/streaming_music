@@ -4,12 +4,14 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { extname } from 'node:path';
 import { Model, Types } from 'mongoose';
 import { buildPaginationMeta } from '@stream-music/shared';
 import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
+import { CATALOG_CHANGED, CatalogChangedEvent } from '../common/events';
 import { StorageService } from '../storage/storage.service';
 import { AudioService } from './audio.service';
 import { CreateTrackDto, UpdateTrackDto } from './dto/catalog.dto';
@@ -32,7 +34,12 @@ export class TracksService {
     @InjectModel(Lyric.name) private readonly lyricModel: Model<LyricDocument>,
     private readonly storage: StorageService,
     private readonly audio: AudioService,
+    private readonly events: EventEmitter2,
   ) {}
+
+  private emit(id: unknown, action: CatalogChangedEvent['action']): void {
+    this.events.emit(CATALOG_CHANGED, { type: 'track', id: String(id), action } as CatalogChangedEvent);
+  }
 
   private artistRefs(artistIds?: string[]) {
     return (artistIds ?? []).map((id, idx) => ({
@@ -41,8 +48,8 @@ export class TracksService {
     }));
   }
 
-  create(dto: CreateTrackDto, ownerId?: string): Promise<TrackDocument> {
-    return this.model.create({
+  async create(dto: CreateTrackDto, ownerId?: string): Promise<TrackDocument> {
+    const track = await this.model.create({
       name: dto.name,
       album: dto.album ? new Types.ObjectId(dto.album) : null,
       number: dto.number ?? 1,
@@ -52,6 +59,8 @@ export class TracksService {
       srcType: dto.srcType ?? (dto.src ? 'youtube' : 'audio'),
       owner: ownerId ? new Types.ObjectId(ownerId) : null,
     });
+    this.emit(track._id, 'upsert');
+    return track;
   }
 
   async list(page: number, perPage: number, search?: string) {
@@ -136,6 +145,7 @@ export class TracksService {
     if (dto.artists !== undefined) track.artists = this.artistRefs(dto.artists);
     if (dto.genres !== undefined) track.genres = dto.genres.map((g) => new Types.ObjectId(g));
     await track.save();
+    this.emit(track._id, 'upsert');
     return track;
   }
 
@@ -146,6 +156,7 @@ export class TracksService {
     if (track.waveformPath) await this.storage.delete(track.waveformPath);
     await this.lyricModel.deleteOne({ track: track._id }).exec();
     await track.deleteOne();
+    this.emit(id, 'delete');
   }
 
   async incrementPlays(id: string): Promise<void> {
