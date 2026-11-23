@@ -12,6 +12,7 @@ import { ChannelsModule } from './channels/channels.module';
 import { DiscoveryModule } from './discovery/discovery.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { MetadataModule } from './metadata/metadata.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { SearchModule } from './search/search.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './users/users.module';
     SearchModule,
     ChannelsModule,
     DiscoveryModule,
+    MetadataModule,
     BootstrapModule,
     HealthModule,
   ],

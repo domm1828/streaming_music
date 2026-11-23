@@ -51,6 +51,10 @@ export class Playlist {
 
   @Prop({ default: 0 })
   followersCount!: number;
+
+  /** Id del proveedor externo si la playlist fue importada (idempotencia). */
+  @Prop({ type: String, default: null, index: true })
+  externalId!: string | null;
 }
 
 export const PlaylistSchema = SchemaFactory.createForClass(Playlist);

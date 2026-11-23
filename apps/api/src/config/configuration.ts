@@ -35,12 +35,19 @@ export interface SearchConfig {
   meiliKey: string;
 }
 
+export interface IntegrationsConfig {
+  spotifyClientId: string;
+  spotifyClientSecret: string;
+  lastfmApiKey: string;
+}
+
 export default (): {
   app: AppConfig;
   jwt: JwtConfig;
   mail: MailConfig;
   features: FeaturesConfig;
   search: SearchConfig;
+  integrations: IntegrationsConfig;
 } => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -69,5 +76,10 @@ export default (): {
     driver: (process.env.SEARCH_DRIVER as 'auto' | 'meili' | 'mongo') ?? 'auto',
     meiliHost: process.env.MEILI_HOST ?? '',
     meiliKey: process.env.MEILI_MASTER_KEY ?? '',
+  },
+  integrations: {
+    spotifyClientId: process.env.SPOTIFY_CLIENT_ID ?? '',
+    spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
+    lastfmApiKey: process.env.LASTFM_API_KEY ?? '',
   },
 });
