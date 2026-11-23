@@ -32,14 +32,38 @@ export class EnvironmentVariables {
   @IsOptional()
   CORS_ORIGIN = '*';
 
-  // Reservado para la Phase 1 (autenticación). Opcional por ahora.
   @IsString()
   @IsOptional()
-  JWT_ACCESS_SECRET?: string;
+  APP_URL = 'http://localhost:5173';
+
+  @IsString()
+  @IsNotEmpty()
+  JWT_ACCESS_SECRET!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  JWT_REFRESH_SECRET!: string;
 
   @IsString()
   @IsOptional()
-  JWT_REFRESH_SECRET?: string;
+  JWT_ACCESS_TTL = '15m';
+
+  @IsString()
+  @IsOptional()
+  JWT_REFRESH_TTL = '30d';
+
+  @IsString()
+  @IsOptional()
+  MAIL_HOST = 'localhost';
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  MAIL_PORT = 1025;
+
+  @IsString()
+  @IsOptional()
+  MAIL_FROM = 'Stream Music <no-reply@streammusic.local>';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
