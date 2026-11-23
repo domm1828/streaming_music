@@ -156,6 +156,6 @@ vite.config.ts.timestamp-*
 .nx/workspace-data
 .nx/migrate-runs
 
-# Uploaded media (local storage driver)
-apps/api/storage/
-storage/
+# Uploaded media (local storage driver) — anchored so they don't match src/storage/
+/apps/api/storage/
+/storage/
