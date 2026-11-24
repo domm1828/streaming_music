@@ -5,6 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import configuration from '../config/configuration';
 import { MailModule } from '../mail/mail.module';
+import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
 import { AuthModule } from './auth.module';
@@ -32,6 +33,7 @@ describe('Cuenta: cambio de contraseña, sesiones y borrado (e2e, in-memory)', (
         ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
         MongooseModule.forRoot(mongod.getUri()),
         MailModule,
+        SettingsModule,
         UsersModule,
         AuthModule,
       ],

@@ -173,6 +173,15 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       const after = await comments.listForContent('artist', trackId, 1, 20);
       expect(after.data.length).toBe(1); // el oculto no aparece
     });
+
+    it('respeta el ajuste commentsEnabled', async () => {
+      const artId = String((await artistModel.create({ name: 'T2', slug: 't2-' + Date.now() }))._id);
+      await settings.set('commentsEnabled', false);
+      await expect(comments.create(userId, 'artist', artId, 'bloqueado')).rejects.toThrow();
+      await settings.set('commentsEnabled', true);
+      const ok = await comments.create(userId, 'artist', artId, 'permitido');
+      expect(ok._id).toBeTruthy();
+    });
   });
 
   describe('Backstage', () => {

@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { buildPaginationMeta } from '@stream-music/shared';
 import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
+import { SettingsService } from '../settings/settings.service';
 import { Comment, CommentDocument, CommentableType } from './schemas/comment.schema';
 import { Vote, VoteDocument } from './schemas/vote.schema';
 
@@ -12,6 +13,7 @@ export class CommentsService {
   constructor(
     @InjectModel(Comment.name) private readonly model: Model<CommentDocument>,
     @InjectModel(Vote.name) private readonly voteModel: Model<VoteDocument>,
+    private readonly settings: SettingsService,
   ) {}
 
   private canModerate(user: AuthenticatedUser): boolean {
@@ -25,6 +27,9 @@ export class CommentsService {
     content: string,
     parentId?: string,
   ): Promise<CommentDocument> {
+    if (!(await this.settings.getBoolean('commentsEnabled', true))) {
+      throw new ForbiddenException('Los comentarios están deshabilitados');
+    }
     let path = '';
     if (parentId) {
       const parent = await this.model.findById(parentId).lean().exec();

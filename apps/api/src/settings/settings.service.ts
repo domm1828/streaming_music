@@ -31,11 +31,19 @@ interface SeedSetting {
 
 const DEFAULT_SETTINGS: SeedSetting[] = [
   { key: LANDING_KEY, value: DEFAULT_LANDING, isPublic: true, group: 'landing' },
-  { key: 'appName', value: BRAND.name, isPublic: true, group: 'branding' },
+  // General
+  { key: 'appName', value: BRAND.name, isPublic: true, group: 'general' },
+  { key: 'appDescription', value: 'Tu música, sin límites.', isPublic: true, group: 'general' },
+  { key: 'defaultLocale', value: 'es', isPublic: true, group: 'general' },
+  { key: 'registrationEnabled', value: true, isPublic: true, group: 'general' },
+  { key: 'commentsEnabled', value: true, isPublic: true, group: 'general' },
+  // SEO
+  { key: 'seo.title', value: `${BRAND.name} — Escuchá música online`, isPublic: true, group: 'seo' },
+  { key: 'seo.description', value: 'Descubrí artistas, armá tu biblioteca y escuchá lo que quieras.', isPublic: true, group: 'seo' },
+  // Subidas
+  { key: 'uploads.maxAudioMb', value: 50, isPublic: false, group: 'uploads' },
+  // Marca
   { key: 'brandColors', value: BRAND.colors, isPublic: true, group: 'branding' },
-  { key: 'defaultLocale', value: 'es', isPublic: true, group: 'localization' },
-  { key: 'registrationEnabled', value: true, isPublic: true, group: 'auth' },
-  { key: 'commentsEnabled', value: true, isPublic: true, group: 'social' },
 ];
 
 /** Configuración respaldada en base de datos, con caché en memoria. */
@@ -50,6 +58,9 @@ export class SettingsService implements OnModuleInit {
     for (const s of DEFAULT_SETTINGS) {
       const exists = await this.model.exists({ key: s.key });
       if (!exists) await this.model.create(s);
+      // Normaliza grupo/visibilidad de las claves gestionadas (sin pisar el valor),
+      // para que settings sembrados con un grupo viejo queden en su sección actual.
+      else await this.model.updateOne({ key: s.key }, { $set: { group: s.group, isPublic: s.isPublic } }).exec();
     }
     await this.refreshCache();
   }
@@ -66,6 +77,21 @@ export class SettingsService implements OnModuleInit {
     const value = (doc?.value as T) ?? fallback;
     if (doc) this.cache.set(key, doc.value);
     return value;
+  }
+
+  /** Lee un setting booleano (acepta valores sembrados como string). */
+  async getBoolean(key: string, fallback: boolean): Promise<boolean> {
+    const v = await this.get<unknown>(key, fallback);
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string') return v === 'true' || v === '1';
+    return fallback;
+  }
+
+  /** Lee un setting numérico con guardas. */
+  async getNumber(key: string, fallback: number): Promise<number> {
+    const v = await this.get<unknown>(key, fallback);
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : fallback;
   }
 
   /** Mapa de settings públicos (para /bootstrap), servido desde caché. */

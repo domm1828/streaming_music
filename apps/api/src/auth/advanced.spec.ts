@@ -14,6 +14,7 @@ import { GeoModule } from '../geo/geo.module';
 import { GeoService } from '../geo/geo.service';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
+import { SettingsModule } from '../settings/settings.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { ArtistsService } from '../catalog/artists.service';
 import { TracksService } from '../catalog/tracks.service';
@@ -67,6 +68,7 @@ describe('Advanced & hardening (e2e, in-memory Mongo)', () => {
         MailModule,
         StorageModule,
         GeoModule,
+        SettingsModule,
         UsersModule,
         AuthModule,
         CatalogModule,
