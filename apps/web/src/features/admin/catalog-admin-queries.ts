@@ -16,10 +16,33 @@ export interface AdminChannel {
 }
 
 // --- Artistas ---
+export interface ArtistRef {
+  _id: string;
+  name: string;
+  slug?: string;
+  image?: string | null;
+}
+export interface AdminArtist {
+  _id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  bio: string | null;
+  verified: boolean;
+  genres: Genre[];
+  similar: ArtistRef[];
+}
 export function useAdminArtists(search: string, page: number) {
   return useQuery<Paginated<Artist & { slug?: string; verified?: boolean }>>({
     queryKey: ['admin-artists', search, page],
     queryFn: () => getList('artists', { search, page, perPage: 20 }),
+  });
+}
+export function useAdminArtist(id: string | null) {
+  return useQuery({
+    queryKey: ['admin-artist', id],
+    queryFn: () => getOne<AdminArtist>(`artists/${id}/edit`),
+    enabled: Boolean(id),
   });
 }
 export function useCreateArtist() {
@@ -39,9 +62,22 @@ export function useDeleteArtist() {
 export function useUpdateArtist() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...dto }: { id: string; name?: string; bio?: string; image?: string; verified?: boolean }) =>
-      mutate<Artist>('patch', `artists/${id}`, dto),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-artists'] }),
+    mutationFn: ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      name?: string;
+      bio?: string;
+      image?: string;
+      verified?: boolean;
+      genres?: string[];
+      similar?: string[];
+    }) => mutate<Artist>('patch', `artists/${id}`, dto),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['admin-artists'] });
+      qc.invalidateQueries({ queryKey: ['admin-artist', v.id] });
+    },
   });
 }
 

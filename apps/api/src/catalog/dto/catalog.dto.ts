@@ -83,6 +83,11 @@ export class UpdateArtistDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  similar?: string[];
 }
 
 export class CreateAlbumDto {
