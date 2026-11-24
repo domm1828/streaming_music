@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
-import { Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield, Upload } from 'lucide-react';
+import { BadgeCheck, Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield, Upload } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
-import { useCreatePlaylist, useMyPlaylists } from '../playlists/playlist-queries';
+import { useMyPlaylists } from '../playlists/playlist-queries';
+import { CreatePlaylistDialog } from '../playlists/CreatePlaylistDialog';
 import { useT } from '../../lib/i18n';
 
 function navClass({ isActive }: { isActive: boolean }) {
@@ -14,17 +16,12 @@ export function Sidebar() {
   const { isAuthenticated, hasPermission } = useAuth();
   const navigate = useNavigate();
   const myPlaylists = useMyPlaylists();
-  const createPlaylist = useCreatePlaylist();
   const t = useT();
-
-  const onCreate = () => {
-    createPlaylist.mutate(
-      { name: 'Nueva playlist' },
-      { onSuccess: (pl) => navigate(`/playlist/${pl._id}`) },
-    );
-  };
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
+    <>
+      <CreatePlaylistDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={(pl) => navigate(`/playlist/${pl._id}`)} />
     <aside className="hidden w-64 shrink-0 flex-col gap-2 p-2 md:flex">
       <div className="rounded-panel bg-elevated p-3">
         <Link to="/" className="mb-4 flex items-center gap-2 px-2 py-1 text-lg font-bold">
@@ -54,6 +51,11 @@ export function Sidebar() {
               <Upload size={18} /> {t('nav.upload', 'Subir música')}
             </NavLink>
           )}
+          {isAuthenticated && (
+            <NavLink to="/backstage" className={navClass}>
+              <BadgeCheck size={18} /> {t('nav.backstage', 'Convertite en artista')}
+            </NavLink>
+          )}
           {hasPermission('content.manage') && (
             <NavLink to="/admin" className={navClass}>
               <Shield size={18} /> {t('nav.admin', 'Admin')}
@@ -68,8 +70,7 @@ export function Sidebar() {
             <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t('sidebar.playlists', 'Playlists')}</span>
             <button
               type="button"
-              onClick={onCreate}
-              disabled={createPlaylist.isPending}
+              onClick={() => setShowCreate(true)}
               className="rounded-md p-1 text-muted hover:bg-main/10 hover:text-main"
               aria-label={t('sidebar.createPlaylist', 'Crear playlist')}
             >
@@ -99,5 +100,6 @@ export function Sidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

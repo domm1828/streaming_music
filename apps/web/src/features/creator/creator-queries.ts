@@ -54,6 +54,20 @@ export function useDeleteMyTrack() {
   });
 }
 
+export interface CreateAlbumInput {
+  name: string;
+  image?: string;
+  releaseDate?: string;
+  artists?: string[];
+  genres?: string[];
+}
+
+export function useCreateAlbum() {
+  return useMutation({
+    mutationFn: (input: CreateAlbumInput) => mutate<{ _id: string; name: string }>('post', 'albums', input),
+  });
+}
+
 /** Sube una imagen (carátula) y devuelve su URL. */
 export function useUploadImage() {
   return useMutation({

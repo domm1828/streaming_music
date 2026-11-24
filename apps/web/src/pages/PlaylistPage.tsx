@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, ImagePlus, Plus, X } from 'lucide-react';
 import { TrackList } from '../features/catalog/TrackList';
-import { MediaHeader, PlayButton, pillClass } from '../components/media';
+import { MediaHeader, PlayButton, SectionHeader, pillClass } from '../components/media';
 import { FollowButton } from '../features/social/FollowButton';
 import { ShareButton } from '../features/social/ShareButton';
 import {
+  useAddTracks,
   useDeletePlaylist,
   usePlaylist,
   useRemoveTrack,
   useReorderTracks,
   useUpdatePlaylist,
 } from '../features/playlists/playlist-queries';
+import { useUploadImage } from '../features/creator/creator-queries';
+import { useSearchType } from '../features/discovery/discovery-queries';
+import { useDebounce } from '../lib/use-debounce';
 import { usePlayerStore } from '../features/player/player-store';
 import type { Track } from '../features/catalog/types';
 
@@ -23,8 +27,12 @@ export function PlaylistPage() {
   const reorder = useReorderTracks(id);
   const removeTrack = useRemoveTrack(id);
   const update = useUpdatePlaylist(id);
+  const addTracks = useAddTracks(id);
+  const uploadCover = useUploadImage();
   const del = useDeletePlaylist();
   const [editing, setEditing] = useState(false);
+  const [q, setQ] = useState('');
+  const search = useSearchType<Track>(useDebounce(q.trim(), 250), 'track', 1);
 
   if (isLoading) return <p className="text-muted">Cargando…</p>;
   if (isError || !data) return <p className="text-red-500">Playlist no encontrada.</p>;
@@ -51,7 +59,7 @@ export function PlaylistPage() {
   return (
     <div className="space-y-8 pt-2">
       <MediaHeader
-        image={null}
+        image={data.image ?? null}
         kicker={kicker}
         title={data.name}
         meta={
@@ -73,6 +81,18 @@ export function PlaylistPage() {
             {!data.isOwner && <FollowButton type="playlist" id={id} />}
             {data.isOwner && (
               <>
+                <label className={`${pillClass()} cursor-pointer`}>
+                  <ImagePlus size={16} /> {uploadCover.isPending ? 'Subiendo…' : 'Portada'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadCover.mutate(f, { onSuccess: (url) => update.mutate({ image: url }) });
+                    }}
+                  />
+                </label>
                 <button type="button" onClick={() => setEditing((e) => !e)} className={pillClass()}>
                   Editar
                 </button>
@@ -88,6 +108,38 @@ export function PlaylistPage() {
           </>
         }
       />
+
+      {data.canEdit && (
+        <section>
+          <SectionHeader title="Agregar pistas" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar pistas para agregar…"
+            className="w-full max-w-md rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary"
+          />
+          {q.trim() && (
+            <ul className="mt-2 max-w-md space-y-1">
+              {(search.data?.data ?? []).map((t) => (
+                <li key={t._id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-main/5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm">{t.name}</p>
+                    <p className="truncate text-xs text-muted">{t.artists?.map((a) => a.artist.name).join(', ')}</p>
+                  </div>
+                  <button
+                    onClick={() => addTracks.mutate([t._id])}
+                    className="rounded-full border border-divider p-1.5 text-muted hover:border-brand-secondary hover:text-main"
+                    aria-label="Agregar"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </li>
+              ))}
+              {search.data && search.data.data.length === 0 && <li className="text-sm text-muted">Sin resultados.</li>}
+            </ul>
+          )}
+        </section>
+      )}
 
       {editing && data.isOwner && (
         <EditForm

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { ListEnd, ListPlus, MoreHorizontal, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ListEnd, ListMusic, ListPlus, MoreHorizontal, Pause, Play } from 'lucide-react';
 import { currentTrack, usePlayerStore } from '../player/player-store';
+import { useAuth } from '../auth/use-auth';
+import { useAddTrackToPlaylist, useMyPlaylists } from '../playlists/playlist-queries';
 import type { Track } from './types';
 
 function fmt(d: number): string {
@@ -28,13 +30,22 @@ export function TrackList({ tracks, showAlbum = false }: { tracks: Track[]; show
   const playing = usePlayerStore(currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const { playQueue, togglePlay, playNext, addToQueue } = usePlayerStore.getState();
+  const { isAuthenticated } = useAuth();
+  const myPlaylists = useMyPlaylists();
+  const addToPlaylist = useAddTrackToPlaylist();
   const [menu, setMenu] = useState<number | null>(null);
+  const [plSub, setPlSub] = useState(false);
+
+  const closeMenu = () => {
+    setMenu(null);
+    setPlSub(false);
+  };
 
   if (tracks.length === 0) return <p className="text-muted">No hay pistas todavía.</p>;
 
   return (
     <div className="relative">
-      {menu !== null && <div className="fixed inset-0 z-10" onClick={() => setMenu(null)} />}
+      {menu !== null && <div className="fixed inset-0 z-10" onClick={closeMenu} />}
       <ul>
         {tracks.map((track, i) => {
           const isCurrent = playing?._id === track._id;
@@ -99,7 +110,7 @@ export function TrackList({ tracks, showAlbum = false }: { tracks: Track[]; show
 
               <div className="relative shrink-0">
                 <button
-                  onClick={() => setMenu(menu === i ? null : i)}
+                  onClick={() => { setPlSub(false); setMenu(menu === i ? null : i); }}
                   className="rounded-full p-1 text-muted opacity-0 transition hover:bg-main/10 hover:text-main focus:opacity-100 group-hover:opacity-100"
                   aria-label="Más opciones"
                 >
@@ -107,50 +118,39 @@ export function TrackList({ tracks, showAlbum = false }: { tracks: Track[]; show
                 </button>
                 {menu === i && (
                   <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-lg border border-divider bg-elevated py-1 shadow-xl">
-                    <MenuButton
-                      icon={<Play size={15} />}
-                      onClick={() => {
-                        playQueue(tracks, i);
-                        setMenu(null);
-                      }}
-                    >
-                      Reproducir
-                    </MenuButton>
-                    <MenuButton
-                      icon={<ListPlus size={15} />}
-                      onClick={() => {
-                        playNext([track]);
-                        setMenu(null);
-                      }}
-                    >
-                      Reproducir a continuación
-                    </MenuButton>
-                    <MenuButton
-                      icon={<ListEnd size={15} />}
-                      onClick={() => {
-                        addToQueue([track]);
-                        setMenu(null);
-                      }}
-                    >
-                      Agregar a la cola
-                    </MenuButton>
-                    {track.artists?.[0] && (
-                      <Link
-                        to={`/artist/${track.artists[0].artist._id}`}
-                        onClick={() => setMenu(null)}
-                        className="block px-3 py-2 text-sm text-main hover:bg-main/10"
-                      >
-                        Ir al artista
-                      </Link>
-                    )}
-                    {track.album && (
-                      <Link
-                        to={`/album/${track.album._id}`}
-                        onClick={() => setMenu(null)}
-                        className="block px-3 py-2 text-sm text-main hover:bg-main/10"
-                      >
-                        Ir al álbum
-                      </Link>
+                    {plSub ? (
+                      <div className="max-h-64 overflow-auto">
+                        <button onClick={() => setPlSub(false)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-muted hover:bg-main/10">
+                          <ChevronLeft size={15} /> Volver
+                        </button>
+                        {myPlaylists.data?.data.map((pl) => (
+                          <button
+                            key={pl._id}
+                            onClick={() => { addToPlaylist.mutate({ playlistId: pl._id, trackId: track._id }); closeMenu(); }}
+                            className="block w-full truncate px-3 py-2 text-left text-sm text-main hover:bg-main/10"
+                          >
+                            {pl.name}
+                          </button>
+                        ))}
+                        {myPlaylists.data && myPlaylists.data.data.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-muted">No tenés playlists.</p>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <MenuButton icon={<Play size={15} />} onClick={() => { playQueue(tracks, i); closeMenu(); }}>Reproducir</MenuButton>
+                        <MenuButton icon={<ListPlus size={15} />} onClick={() => { playNext([track]); closeMenu(); }}>Reproducir a continuación</MenuButton>
+                        <MenuButton icon={<ListEnd size={15} />} onClick={() => { addToQueue([track]); closeMenu(); }}>Agregar a la cola</MenuButton>
+                        {isAuthenticated && (
+                          <MenuButton icon={<ListMusic size={15} />} onClick={() => setPlSub(true)}>Agregar a playlist</MenuButton>
+                        )}
+                        {track.artists?.[0] && (
+                          <Link to={`/artist/${track.artists[0].artist._id}`} onClick={closeMenu} className="block px-3 py-2 text-sm text-main hover:bg-main/10">Ir al artista</Link>
+                        )}
+                        {track.album && (
+                          <Link to={`/album/${track.album._id}`} onClick={closeMenu} className="block px-3 py-2 text-sm text-main hover:bg-main/10">Ir al álbum</Link>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

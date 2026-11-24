@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { buildPaginationMeta } from '@stream-music/shared';
+import { PERMISSIONS } from '../auth/rbac/permissions';
+import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { CATALOG_CHANGED, CatalogChangedEvent } from '../common/events';
 import { CreateAlbumDto, UpdateAlbumDto } from './dto/catalog.dto';
 import { Album, AlbumDocument } from './schemas/album.schema';
@@ -62,18 +64,32 @@ export class AlbumsService {
     return { ...album, tracks };
   }
 
-  async update(id: string, dto: UpdateAlbumDto): Promise<AlbumDocument> {
-    const changes: Record<string, unknown> = { ...dto };
-    if (dto.releaseDate) changes.releaseDate = new Date(dto.releaseDate);
-    const album = await this.model.findByIdAndUpdate(id, changes, { new: true }).exec();
+  private assertCanManage(album: AlbumDocument, user: AuthenticatedUser): void {
+    const isOwner = album.owner && String(album.owner) === user.id;
+    const canManage = user.permissions.includes('*') || user.permissions.includes(PERMISSIONS.CATALOG_MANAGE);
+    if (!isOwner && !canManage) throw new ForbiddenException('No podés modificar este álbum');
+  }
+
+  async update(id: string, dto: UpdateAlbumDto, user: AuthenticatedUser): Promise<AlbumDocument> {
+    const album = Types.ObjectId.isValid(id) ? await this.model.findById(id).exec() : null;
     if (!album) throw new NotFoundException('Álbum no encontrado');
+    this.assertCanManage(album, user);
+    if (dto.name !== undefined) album.name = dto.name;
+    if (dto.releaseDate !== undefined) album.releaseDate = dto.releaseDate ? new Date(dto.releaseDate) : null;
+    if (dto.description !== undefined) album.description = dto.description;
+    if (dto.image !== undefined) album.image = dto.image;
+    if (dto.artists !== undefined) album.artists = dto.artists.map((a) => new Types.ObjectId(a));
+    if (dto.genres !== undefined) album.genres = dto.genres.map((g) => new Types.ObjectId(g));
+    await album.save();
     this.emit(album._id, 'upsert');
     return album;
   }
 
-  async remove(id: string): Promise<void> {
-    const res = await this.model.deleteOne({ _id: id }).exec();
-    if (res.deletedCount === 0) throw new NotFoundException('Álbum no encontrado');
+  async remove(id: string, user: AuthenticatedUser): Promise<void> {
+    const album = Types.ObjectId.isValid(id) ? await this.model.findById(id).exec() : null;
+    if (!album) throw new NotFoundException('Álbum no encontrado');
+    this.assertCanManage(album, user);
+    await album.deleteOne();
     this.emit(id, 'delete');
   }
 }
