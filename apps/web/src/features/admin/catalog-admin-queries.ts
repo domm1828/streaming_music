@@ -132,13 +132,31 @@ export function useUploadImage() {
 }
 
 // --- Géneros ---
+export interface GenreStats {
+  _id: string;
+  name: string;
+  displayName: string;
+  image: string | null;
+  popularity: number;
+  artistsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 export function useAdminGenres() {
-  return useQuery({ queryKey: ['admin-genres'], queryFn: () => getOne<Genre[]>('genres') });
+  return useQuery({ queryKey: ['admin-genres'], queryFn: () => getOne<GenreStats[]>('genres/with-stats') });
 }
 export function useCreateGenre() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => mutate<Genre>('post', 'genres', { name, displayName: name }),
+    mutationFn: (displayName: string) => mutate<Genre>('post', 'genres', { name: displayName, displayName }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-genres'] }),
+  });
+}
+export function useUpdateGenre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...dto }: { id: string; displayName?: string; image?: string }) =>
+      mutate<Genre>('patch', `genres/${id}`, dto),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-genres'] }),
   });
 }
