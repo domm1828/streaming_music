@@ -55,6 +55,15 @@ export function TrackPage() {
             >
               📻 Radio
             </Link>
+            {data.srcType === 'audio' && data.src && (
+              <a
+                href={data.src}
+                download={data.name}
+                className="rounded-lg border border-brand-secondary/30 px-3 py-2 text-sm font-medium hover:border-brand-secondary/60"
+              >
+                ⬇ Descargar audio
+              </a>
+            )}
           </div>
         </div>
       </header>

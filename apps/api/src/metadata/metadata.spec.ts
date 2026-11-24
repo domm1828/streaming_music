@@ -6,6 +6,7 @@ import { Connection, Model, Types } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import configuration from '../config/configuration';
+import { StorageModule } from '../storage/storage.module';
 import { Artist } from '../catalog/schemas/artist.schema';
 import { Track } from '../catalog/schemas/track.schema';
 import { MetadataModule } from './metadata.module';
@@ -91,6 +92,7 @@ describe('Metadata import (e2e, in-memory Mongo, proveedores mockeados)', () => 
         ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
         EventEmitterModule.forRoot(),
         MongooseModule.forRoot(mongod.getUri()),
+        StorageModule,
         MetadataModule,
       ],
     })

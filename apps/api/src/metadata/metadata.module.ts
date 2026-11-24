@@ -17,6 +17,9 @@ import { LastfmProvider } from './lastfm.provider';
 import { LrclibProvider, LrclibSearchProvider } from './lyrics/lyrics.providers';
 import { ImportService } from './import.service';
 import { LyricsImportService } from './lyrics-import.service';
+import { YoutubeIngestService } from './youtube-ingest.service';
+import { YOUTUBE_DOWNLOADER, YtdlDownloader } from './youtube-downloader';
+import { AudioService } from '../catalog/audio.service';
 import { ImportController } from './import.controller';
 
 @Module({
@@ -41,6 +44,9 @@ import { ImportController } from './import.controller';
       useFactory: (primary: LrclibProvider, secondary: LrclibSearchProvider) => [primary, secondary],
       inject: [LrclibProvider, LrclibSearchProvider],
     },
+    { provide: YOUTUBE_DOWNLOADER, useClass: YtdlDownloader },
+    AudioService,
+    YoutubeIngestService,
     ImportService,
     LyricsImportService,
   ],

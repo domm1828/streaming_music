@@ -19,6 +19,7 @@ import {
   SecondaryMetadataProvider,
 } from './provider.types';
 import { ImportJob, ImportJobDocument, ImportJobType } from './schemas/import-job.schema';
+import { YoutubeIngestService } from './youtube-ingest.service';
 
 export interface ImportSummary {
   artists: number;
@@ -45,6 +46,7 @@ export class ImportService {
     @InjectModel(Playlist.name) private readonly playlistModel: Model<PlaylistDocument>,
     @InjectModel(ImportJob.name) private readonly jobModel: Model<ImportJobDocument>,
     private readonly events: EventEmitter2,
+    private readonly youtube: YoutubeIngestService,
   ) {}
 
   providerConfigured(): boolean {
@@ -350,6 +352,8 @@ export class ImportService {
         return this.importFeaturedPlaylists(userId);
       case 'topGenres':
         return this.importTopGenres();
+      case 'youtube':
+        return this.youtube.ingest(externalId ?? '', userId);
     }
   }
 
