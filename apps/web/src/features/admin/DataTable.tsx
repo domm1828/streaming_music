@@ -40,14 +40,14 @@ export function DataTable<T>({
               value={search.value}
               onChange={(e) => search.onChange(e.target.value)}
               placeholder={search.placeholder ?? 'Buscar…'}
-              className="min-w-0 flex-1 rounded-lg border border-brand-secondary/30 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-secondary"
+              className="min-w-0 flex-1 rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary"
             />
           )}
           {onExport && (
             <button
               type="button"
               onClick={onExport}
-              className="rounded-lg border border-brand-secondary/30 px-3 py-2 text-sm font-medium hover:border-brand-secondary/60"
+              className="rounded-lg border border-divider px-3 py-2 text-sm font-medium text-muted hover:border-brand-secondary hover:text-main"
             >
               Exportar CSV
             </button>
@@ -55,9 +55,9 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-brand-secondary/20">
+      <div className="overflow-x-auto rounded-panel border border-divider">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-brand-secondary/20 bg-brand-primary/5">
+          <thead className="border-b border-divider bg-chip">
             <tr>
               {columns.map((c) => (
                 <th key={c.key} className={`px-3 py-2 font-semibold ${c.className ?? ''}`}>
@@ -70,19 +70,19 @@ export function DataTable<T>({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center opacity-60">
+                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center text-muted">
                   Cargando…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center opacity-60">
+                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center text-muted">
                   {emptyText}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={rowKey(row)} className="border-b border-brand-secondary/10 last:border-0">
+                <tr key={rowKey(row)} className="border-b border-divider last:border-0 hover:bg-main/5">
                   {columns.map((c) => (
                     <td key={c.key} className={`px-3 py-2 ${c.className ?? ''}`}>
                       {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '')}
@@ -102,18 +102,18 @@ export function DataTable<T>({
             type="button"
             disabled={pagination.page <= 1}
             onClick={() => pagination.onPage(pagination.page - 1)}
-            className="rounded px-3 py-1 hover:bg-brand-primary/10 disabled:opacity-40"
+            className="rounded px-3 py-1 hover:bg-main/10 disabled:opacity-40"
           >
             ← Anterior
           </button>
-          <span className="opacity-60">
+          <span className="text-muted">
             Página {pagination.page} de {pagination.lastPage}
           </span>
           <button
             type="button"
             disabled={pagination.page >= pagination.lastPage}
             onClick={() => pagination.onPage(pagination.page + 1)}
-            className="rounded px-3 py-1 hover:bg-brand-primary/10 disabled:opacity-40"
+            className="rounded px-3 py-1 hover:bg-main/10 disabled:opacity-40"
           >
             Siguiente →
           </button>
