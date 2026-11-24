@@ -71,6 +71,71 @@ export function PlayerEngine() {
     usePlayerStore.getState().consumeSeek();
   }, [pendingSeek, isYoutube]);
 
+  // Media Session API: metadata + controles del sistema operativo.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (!track) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    const artwork = track.image ?? track.album?.image ?? null;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.name,
+      artist: track.artists?.map((a) => a.artist.name).join(', ') ?? '',
+      album: track.album?.name ?? '',
+      artwork: artwork ? [{ src: artwork, sizes: '512x512' }] : [],
+    });
+    const s = usePlayerStore.getState();
+    navigator.mediaSession.setActionHandler('play', () => s.setPlaying(true));
+    navigator.mediaSession.setActionHandler('pause', () => s.setPlaying(false));
+    navigator.mediaSession.setActionHandler('previoustrack', () => usePlayerStore.getState().prev());
+    navigator.mediaSession.setActionHandler('nexttrack', () => usePlayerStore.getState().next());
+    navigator.mediaSession.setActionHandler('seekto', (e) => {
+      if (typeof e.seekTime === 'number') usePlayerStore.getState().seekTo(e.seekTime);
+    });
+  }, [track]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
+
+  // Atajos de teclado globales (ignorados al escribir en inputs).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      const s = usePlayerStore.getState();
+      if (s.index < 0) return;
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          s.togglePlay();
+          break;
+        case 'ArrowRight':
+          if (e.shiftKey) s.next();
+          else s.seekTo(Math.min(s.duration || Infinity, s.currentTime + 5));
+          break;
+        case 'ArrowLeft':
+          if (e.shiftKey) s.prev();
+          else s.seekTo(Math.max(0, s.currentTime - 5));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          s.setVolume(s.volume + 0.1);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          s.setVolume(s.volume - 0.1);
+          break;
+        case 'm':
+          s.setVolume(s.volume > 0 ? 0 : 0.8);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const { setProgress, next } = usePlayerStore.getState();
 
   return (
