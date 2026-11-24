@@ -20,8 +20,30 @@ export function useSaveSettings() {
   return useMutation({
     mutationFn: (settings: { key: string; value: unknown }[]) =>
       mutate<{ updated: number }>('put', 'admin/settings', { settings }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-settings'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-settings'] });
+      qc.invalidateQueries({ queryKey: ['bootstrap'] });
+    },
   });
+}
+
+// --- Analytics ---
+export interface AnalyticsOverview {
+  totals: { users: number; artists: number; albums: number; tracks: number; plays: number };
+  newUsers: number;
+  topTracks: { id: string; name: string; plays: number }[];
+  playsByDay: { day: string; plays: number }[];
+  topCountries: { country: string; plays: number }[];
+}
+
+export function useAdminAnalytics() {
+  return useQuery({ queryKey: ['admin-analytics'], queryFn: () => getOne<AnalyticsOverview>('admin/analytics') });
+}
+
+export interface MenuItem {
+  label: string;
+  path: string;
+  auth?: boolean;
 }
 
 // --- Reportes / moderación ---
