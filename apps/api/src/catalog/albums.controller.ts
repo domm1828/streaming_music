@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { AlbumsService } from './albums.service';
-import { CatalogListDto, CreateAlbumDto, UpdateAlbumDto } from './dto/catalog.dto';
+import { AlbumTracksOrderDto, CatalogListDto, CreateAlbumDto, UpdateAlbumDto } from './dto/catalog.dto';
 
 @Controller('albums')
 export class AlbumsController {
@@ -17,6 +17,24 @@ export class AlbumsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findWithTracks(id);
+  }
+
+  @Get(':id/edit')
+  @UseGuards(JwtAuthGuard)
+  findForEdit(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.findForEdit(id, user);
+  }
+
+  @Put(':id/tracks/order')
+  @UseGuards(JwtAuthGuard)
+  reorderTracks(@Param('id') id: string, @Body() dto: AlbumTracksOrderDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.reorderTracks(id, dto.trackIds, user);
+  }
+
+  @Delete(':id/tracks/:trackId')
+  @UseGuards(JwtAuthGuard)
+  removeTrack(@Param('id') id: string, @Param('trackId') trackId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.removeTrack(id, trackId, user);
   }
 
   // Cualquier usuario autenticado puede crear un álbum (queda como dueño); editar/borrar: dueño o admin.
