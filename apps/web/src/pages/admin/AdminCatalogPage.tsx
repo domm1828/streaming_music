@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useDebounce } from '../../lib/use-debounce';
 import { Column, DataTable } from '../../features/admin/DataTable';
+import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { Tabs } from '../../components/Tabs';
 import {
   useAdminAlbums,
@@ -143,6 +144,7 @@ function ArtistsTab() {
   const update = useUpdateArtist();
   const upload = useUploadImage();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const pick = (id: string, file: File) => {
     setBusyId(id);
@@ -171,6 +173,12 @@ function ArtistsTab() {
         pagination={{ page, lastPage: data?.pagination.lastPage ?? 1, onPage: setPage }}
         actions={(a) => (
           <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setEditId(a._id)}
+              className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary"
+            >
+              Editar
+            </button>
             <Link to={`/artist/${a._id}`} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary">
               Ver
             </Link>
@@ -178,6 +186,7 @@ function ArtistsTab() {
           </div>
         )}
       />
+      {editId && <ArtistEditDialog artistId={editId} onClose={() => setEditId(null)} />}
     </div>
   );
 }

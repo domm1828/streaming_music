@@ -20,6 +20,13 @@ export class ArtistsController {
     return this.service.findByIdOrFail(id);
   }
 
+  @Get(':id/edit')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.CATALOG_MANAGE)
+  findForEdit(@Param('id') id: string) {
+    return this.service.findForEdit(id);
+  }
+
   @Get(':id/albums')
   albums(@Param('id') id: string, @Query() query: CatalogListDto) {
     return this.service.albums(id, query.page, query.perPage);
