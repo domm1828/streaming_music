@@ -64,6 +64,49 @@ export class AlbumsService {
     return { ...album, tracks };
   }
 
+  /** Detalle para el panel admin: artistas y géneros poblados + pistas, sin incrementar views. */
+  async findForEdit(id: string, user: AuthenticatedUser) {
+    const album = Types.ObjectId.isValid(id)
+      ? await this.model.findById(id).populate('artists').populate('genres').exec()
+      : null;
+    if (!album) throw new NotFoundException('Álbum no encontrado');
+    this.assertCanManage(album, user);
+    const tracks = await this.trackModel
+      .find({ album: album._id })
+      .sort({ number: 1 })
+      .populate('artists.artist')
+      .lean()
+      .exec();
+    return { ...album.toObject(), tracks };
+  }
+
+  private async loadManageable(id: string, user: AuthenticatedUser): Promise<AlbumDocument> {
+    const album = Types.ObjectId.isValid(id) ? await this.model.findById(id).exec() : null;
+    if (!album) throw new NotFoundException('Álbum no encontrado');
+    this.assertCanManage(album, user);
+    return album;
+  }
+
+  /** Quita una pista del álbum (la desvincula, no la borra). */
+  async removeTrack(albumId: string, trackId: string, user: AuthenticatedUser) {
+    const album = await this.loadManageable(albumId, user);
+    await this.trackModel.updateOne({ _id: trackId, album: album._id }, { $set: { album: null, number: 0 } }).exec();
+    this.emit(album._id, 'upsert');
+    return this.findForEdit(albumId, user);
+  }
+
+  /** Reordena las pistas del álbum asignando number según el orden recibido. */
+  async reorderTracks(albumId: string, trackIds: string[], user: AuthenticatedUser) {
+    const album = await this.loadManageable(albumId, user);
+    await Promise.all(
+      trackIds.map((tid, i) =>
+        this.trackModel.updateOne({ _id: tid, album: album._id }, { $set: { number: i + 1 } }).exec(),
+      ),
+    );
+    this.emit(album._id, 'upsert');
+    return this.findForEdit(albumId, user);
+  }
+
   private assertCanManage(album: AlbumDocument, user: AuthenticatedUser): void {
     const isOwner = album.owner && String(album.owner) === user.id;
     const canManage = user.permissions.includes('*') || user.permissions.includes(PERMISSIONS.CATALOG_MANAGE);

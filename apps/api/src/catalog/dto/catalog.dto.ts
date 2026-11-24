@@ -146,6 +146,12 @@ export class UpdateAlbumDto {
   genres?: string[];
 }
 
+export class AlbumTracksOrderDto {
+  @IsArray()
+  @IsMongoId({ each: true })
+  trackIds!: string[];
+}
+
 export class CreateTrackDto {
   @IsString()
   @IsNotEmpty()

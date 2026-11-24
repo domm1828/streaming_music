@@ -82,18 +82,68 @@ export function useUpdateArtist() {
 }
 
 // --- Álbumes ---
+export interface AdminAlbumTrack {
+  _id: string;
+  name: string;
+  number: number;
+  artists?: { artist: ArtistRef }[];
+}
+export interface AdminAlbum {
+  _id: string;
+  name: string;
+  image: string | null;
+  description: string | null;
+  releaseDate: string | null;
+  artists: ArtistRef[];
+  genres: Genre[];
+  tracks: AdminAlbumTrack[];
+}
 export function useAdminAlbums(search: string, page: number) {
   return useQuery<Paginated<Album>>({
     queryKey: ['admin-albums', search, page],
     queryFn: () => getList('albums', { search, page, perPage: 20 }),
   });
 }
+export function useAdminAlbum(id: string | null) {
+  return useQuery({
+    queryKey: ['admin-album', id],
+    queryFn: () => getOne<AdminAlbum>(`albums/${id}/edit`),
+    enabled: Boolean(id),
+  });
+}
 export function useUpdateAlbum() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...dto }: { id: string; name?: string; image?: string; description?: string; releaseDate?: string }) =>
-      mutate<Album>('patch', `albums/${id}`, dto),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-albums'] }),
+    mutationFn: ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      name?: string;
+      image?: string;
+      description?: string;
+      releaseDate?: string;
+      artists?: string[];
+      genres?: string[];
+    }) => mutate<Album>('patch', `albums/${id}`, dto),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['admin-albums'] });
+      qc.invalidateQueries({ queryKey: ['admin-album', v.id] });
+    },
+  });
+}
+export function useReorderAlbumTracks(albumId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (trackIds: string[]) => mutate<AdminAlbum>('put', `albums/${albumId}/tracks/order`, { trackIds }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-album', albumId] }),
+  });
+}
+export function useRemoveAlbumTrack(albumId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (trackId: string) => mutate<AdminAlbum>('delete', `albums/${albumId}/tracks/${trackId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-album', albumId] }),
   });
 }
 export function useDeleteAlbum() {
