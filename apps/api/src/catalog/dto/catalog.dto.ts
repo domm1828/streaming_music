@@ -166,6 +166,10 @@ export class CreateTrackDto {
   @IsOptional()
   genres?: string[];
 
+  @IsString()
+  @IsOptional()
+  image?: string;
+
   /** Para pistas externas (youtube/hls): id de YouTube o URL. */
   @IsString()
   @IsOptional()
@@ -200,6 +204,10 @@ export class UpdateTrackDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsString()
+  @IsOptional()
+  image?: string;
 }
 
 export class UpsertLyricDto {

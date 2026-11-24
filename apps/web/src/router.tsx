@@ -27,6 +27,7 @@ import { AdminMenusPage } from './pages/admin/AdminMenusPage';
 import { AdminLogsPage } from './pages/admin/AdminLogsPage';
 import { AdminFilesPage } from './pages/admin/AdminFilesPage';
 import { AccountPage } from './pages/AccountPage';
+import { UploadPage } from './pages/UploadPage';
 import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -53,6 +54,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <LibraryPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: '/upload',
+        element: (
+          <RequireAuth>
+            <UploadPage />
           </RequireAuth>
         ),
       },
