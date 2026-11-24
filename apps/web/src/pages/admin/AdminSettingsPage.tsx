@@ -7,26 +7,37 @@ interface BrandColors {
   accent: string;
 }
 
-const inputClass = 'rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary';
+const inputClass =
+  'rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary';
+
+const DEFAULT_COLORS: BrandColors = { primary: '#2d5a34', secondary: '#4e8c56', accent: '#f5b31e' };
 
 export function AdminSettingsPage() {
   const { data, isLoading } = useAdminSettings();
   const save = useSaveSettings();
 
   const [appName, setAppName] = useState('');
+  const [appDescription, setAppDescription] = useState('');
   const [defaultLocale, setDefaultLocale] = useState('es');
   const [registration, setRegistration] = useState(true);
   const [comments, setComments] = useState(true);
-  const [colors, setColors] = useState<BrandColors>({ primary: '#2d5a34', secondary: '#4e8c56', accent: '#f5b31e' });
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
+  const [maxAudioMb, setMaxAudioMb] = useState(50);
+  const [colors, setColors] = useState<BrandColors>(DEFAULT_COLORS);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!data) return;
     const get = (key: string) => data.find((s) => s.key === key)?.value;
     setAppName((get('appName') as string) ?? '');
+    setAppDescription((get('appDescription') as string) ?? '');
     setDefaultLocale((get('defaultLocale') as string) ?? 'es');
     setRegistration((get('registrationEnabled') as boolean) ?? true);
     setComments((get('commentsEnabled') as boolean) ?? true);
+    setSeoTitle((get('seo.title') as string) ?? '');
+    setSeoDescription((get('seo.description') as string) ?? '');
+    setMaxAudioMb((get('uploads.maxAudioMb') as number) ?? 50);
     const c = get('brandColors') as BrandColors | undefined;
     if (c) setColors({ primary: c.primary, secondary: c.secondary, accent: c.accent });
   }, [data]);
@@ -36,9 +47,13 @@ export function AdminSettingsPage() {
     save.mutate(
       [
         { key: 'appName', value: appName },
+        { key: 'appDescription', value: appDescription },
         { key: 'defaultLocale', value: defaultLocale },
         { key: 'registrationEnabled', value: registration },
         { key: 'commentsEnabled', value: comments },
+        { key: 'seo.title', value: seoTitle },
+        { key: 'seo.description', value: seoDescription },
+        { key: 'uploads.maxAudioMb', value: Number(maxAudioMb) || 50 },
         { key: 'brandColors', value: colors },
       ],
       { onSuccess: () => setSaved(true) },
@@ -58,15 +73,63 @@ export function AdminSettingsPage() {
           <input value={appName} onChange={(e) => setAppName(e.target.value)} className={`${inputClass} w-full`} />
         </label>
         <label className="block">
+          <span className="mb-1 block text-sm">Descripción corta</span>
+          <input
+            value={appDescription}
+            onChange={(e) => setAppDescription(e.target.value)}
+            className={`${inputClass} w-full`}
+          />
+        </label>
+        <label className="block">
           <span className="mb-1 block text-sm">Idioma por defecto</span>
-          <input value={defaultLocale} onChange={(e) => setDefaultLocale(e.target.value)} className={`${inputClass} w-32`} />
+          <input
+            value={defaultLocale}
+            onChange={(e) => setDefaultLocale(e.target.value)}
+            className={`${inputClass} w-32`}
+          />
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={registration} onChange={(e) => setRegistration(e.target.checked)} /> Registro abierto
+          <input type="checkbox" checked={registration} onChange={(e) => setRegistration(e.target.checked)} /> Registro
+          abierto
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={comments} onChange={(e) => setComments(e.target.checked)} /> Comentarios habilitados
+          <input type="checkbox" checked={comments} onChange={(e) => setComments(e.target.checked)} /> Comentarios
+          habilitados
         </label>
+      </section>
+
+      <section className="space-y-4 rounded-panel bg-chip p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">SEO</h3>
+        <label className="block">
+          <span className="mb-1 block text-sm">Título del sitio</span>
+          <input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className={`${inputClass} w-full`} />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm">Meta descripción</span>
+          <textarea
+            value={seoDescription}
+            onChange={(e) => setSeoDescription(e.target.value)}
+            rows={2}
+            className={`${inputClass} w-full`}
+          />
+        </label>
+        <p className="text-xs text-muted">Se aplican al título y la meta description del documento.</p>
+      </section>
+
+      <section className="space-y-4 rounded-panel bg-chip p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Subidas</h3>
+        <label className="block">
+          <span className="mb-1 block text-sm">Tamaño máximo de audio (MB)</span>
+          <input
+            type="number"
+            min={1}
+            max={500}
+            value={maxAudioMb}
+            onChange={(e) => setMaxAudioMb(Number(e.target.value))}
+            className={`${inputClass} w-32`}
+          />
+        </label>
+        <p className="text-xs text-muted">Límite aplicado al subir pistas de audio.</p>
       </section>
 
       <section className="space-y-4 rounded-panel bg-chip p-5">
@@ -84,7 +147,7 @@ export function AdminSettingsPage() {
             </label>
           ))}
         </div>
-        <p className="text-xs text-muted">Los colores se aplican en el próximo build del frontend (tokens de marca).</p>
+        <p className="text-xs text-muted">Los colores se aplican en vivo a los tokens de marca del frontend.</p>
       </section>
 
       <div className="flex items-center gap-3">

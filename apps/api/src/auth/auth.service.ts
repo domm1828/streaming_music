@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { MailService } from '../mail/mail.service';
+import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import type { AuthenticatedUser } from './types/authenticated-user';
 import { OtpService } from './otp.service';
@@ -31,9 +33,13 @@ export class AuthService {
     private readonly otp: OtpService,
     private readonly mail: MailService,
     private readonly twoFactor: TwoFactorService,
+    private readonly settings: SettingsService,
   ) {}
 
   async register(dto: RegisterDto, meta: SessionMeta): Promise<AuthResult> {
+    if (!(await this.settings.getBoolean('registrationEnabled', true))) {
+      throw new ForbiddenException('El registro está deshabilitado');
+    }
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.usersService.create({
       name: dto.name,
