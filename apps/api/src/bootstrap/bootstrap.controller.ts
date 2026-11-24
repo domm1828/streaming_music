@@ -6,6 +6,18 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { LocalizationService } from '../localization/localization.service';
 import { SettingsService } from '../settings/settings.service';
 
+interface MenuItem {
+  label: string;
+  path: string;
+  auth?: boolean;
+}
+
+const DEFAULT_PRIMARY_MENU: MenuItem[] = [
+  { label: 'Inicio', path: '/' },
+  { label: 'Buscar', path: '/search' },
+  { label: 'Tu biblioteca', path: '/library', auth: true },
+];
+
 /**
  * Estado inicial que consume el frontend al cargar: settings públicos, menús,
  * traducciones y el usuario autenticado si hay token. Autenticación opcional.
@@ -20,9 +32,10 @@ export class BootstrapController {
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
   async get(@CurrentUser() user?: AuthenticatedUser, @Query('locale') locale?: string) {
-    const [publicSettings, i18n] = await Promise.all([
+    const [publicSettings, i18n, primaryMenu] = await Promise.all([
       this.settings.getPublic(),
       this.localization.getLines(locale ?? 'es'),
+      this.settings.get<MenuItem[]>('menus', DEFAULT_PRIMARY_MENU),
     ]);
 
     return {
@@ -34,11 +47,7 @@ export class BootstrapController {
         ...publicSettings,
       },
       menus: {
-        primary: [
-          { label: 'Inicio', path: '/' },
-          { label: 'Buscar', path: '/search' },
-          { label: 'Tu biblioteca', path: '/library', auth: true },
-        ],
+        primary: Array.isArray(primaryMenu) && primaryMenu.length > 0 ? primaryMenu : DEFAULT_PRIMARY_MENU,
       },
       i18n,
       user: user ?? null,

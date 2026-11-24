@@ -22,6 +22,8 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminModerationPage } from './pages/admin/AdminModerationPage';
 import { AdminBackstagePage } from './pages/admin/AdminBackstagePage';
 import { AdminPagesPage } from './pages/admin/AdminPagesPage';
+import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
+import { AdminMenusPage } from './pages/admin/AdminMenusPage';
 import { AccountPage } from './pages/AccountPage';
 import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
@@ -76,7 +78,9 @@ export const router = createBrowserRouter([
           </RequirePermission>
         ),
         children: [
-          { index: true, element: <Navigate to="/admin/users" replace /> },
+          { index: true, element: <Navigate to="/admin/analytics" replace /> },
+          { path: 'analytics', element: <AdminAnalyticsPage /> },
+          { path: 'menus', element: <AdminMenusPage /> },
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'catalog', element: <AdminCatalogPage /> },
           { path: 'import', element: <AdminImportPage /> },

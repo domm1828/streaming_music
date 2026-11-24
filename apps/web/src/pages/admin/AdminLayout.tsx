@@ -1,10 +1,12 @@
 import { NavLink, Outlet } from 'react-router';
 
 const LINKS = [
+  { to: '/admin/analytics', label: 'Analytics' },
   { to: '/admin/users', label: 'Usuarios' },
   { to: '/admin/catalog', label: 'Catálogo' },
   { to: '/admin/import', label: 'Importar' },
   { to: '/admin/settings', label: 'Ajustes' },
+  { to: '/admin/menus', label: 'Menús' },
   { to: '/admin/moderation', label: 'Moderación' },
   { to: '/admin/backstage', label: 'Backstage' },
   { to: '/admin/pages', label: 'Páginas' },
