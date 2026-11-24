@@ -59,10 +59,29 @@ export class TracksService {
       genres: dto.genres ?? [],
       src: dto.src ?? null,
       srcType: dto.srcType ?? (dto.src ? 'youtube' : 'audio'),
+      image: dto.image ?? null,
       owner: ownerId ? new Types.ObjectId(ownerId) : null,
     });
     this.emit(track._id, 'upsert');
     return track;
+  }
+
+  /** Pistas subidas por un usuario (su biblioteca de creador). */
+  async listByOwner(ownerId: string, page: number, perPage: number) {
+    const filter = { owner: new Types.ObjectId(ownerId) };
+    const [data, total] = await Promise.all([
+      this.model
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * perPage)
+        .limit(perPage)
+        .populate('artists.artist')
+        .populate('album')
+        .lean()
+        .exec(),
+      this.model.countDocuments(filter).exec(),
+    ]);
+    return { data, pagination: buildPaginationMeta(total, page, perPage) };
   }
 
   async list(page: number, perPage: number, search?: string) {
@@ -150,6 +169,7 @@ export class TracksService {
     if (dto.album !== undefined) track.album = new Types.ObjectId(dto.album);
     if (dto.artists !== undefined) track.artists = this.artistRefs(dto.artists);
     if (dto.genres !== undefined) track.genres = dto.genres.map((g) => new Types.ObjectId(g));
+    if (dto.image !== undefined) track.image = dto.image;
     await track.save();
     this.emit(track._id, 'upsert');
     return track;

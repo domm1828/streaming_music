@@ -12,10 +12,7 @@ import type { Request } from 'express';
 import { randomBytes } from 'node:crypto';
 import { extname } from 'node:path';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { StorageService } from './storage.service';
 import { FilesAdminService } from './files-admin.service';
@@ -23,9 +20,9 @@ import { FilesAdminService } from './files-admin.service';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'];
 
+// Cualquier usuario autenticado puede subir imágenes (carátulas, portadas, avatar).
 @Controller('admin/uploads')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-@RequirePermissions(PERMISSIONS.CATALOG_MANAGE)
+@UseGuards(JwtAuthGuard)
 export class UploadsController {
   constructor(
     private readonly storage: StorageService,

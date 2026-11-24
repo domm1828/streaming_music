@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from 'react-router';
-import { Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield } from 'lucide-react';
+import { Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield, Upload } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
 import { useCreatePlaylist, useMyPlaylists } from '../playlists/playlist-queries';
 import { useT } from '../../lib/i18n';
@@ -47,6 +47,11 @@ export function Sidebar() {
           {isAuthenticated && (
             <NavLink to="/library" className={navClass}>
               <Library size={18} /> {t('nav.library', 'Tu biblioteca')}
+            </NavLink>
+          )}
+          {isAuthenticated && (
+            <NavLink to="/upload" className={navClass}>
+              <Upload size={18} /> {t('nav.upload', 'Subir música')}
             </NavLink>
           )}
           {hasPermission('content.manage') && (

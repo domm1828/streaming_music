@@ -40,6 +40,12 @@ export class TracksController {
     return this.service.list(query.page, query.perPage, query.search);
   }
 
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  mine(@Query() query: CatalogListDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.listByOwner(user.id, query.page, query.perPage);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findDetail(id);
