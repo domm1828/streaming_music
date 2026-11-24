@@ -78,7 +78,12 @@ async function seed() {
       });
       for (let i = 1; i <= 2; i++) {
         const track = await tracks.create(
-          { name: `${artist.name} Track ${i}`, album: String(album._id), artists: [String(artist._id)] },
+          {
+            name: `${artist.name} Track ${i}`,
+            album: String(album._id),
+            artists: [String(artist._id)],
+            genres: [String(genre._id)],
+          },
           undefined,
         );
         demoTracks.push(String(track._id));

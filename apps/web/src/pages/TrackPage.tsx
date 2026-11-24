@@ -50,7 +50,7 @@ export function TrackPage() {
             <LikeButton type="track" id={data._id} label />
             <AddToPlaylist trackId={data._id} />
             <Link
-              to={`/radio?seedType=track&seedId=${data._id}`}
+              to={`/radio?seedType=track&seedId=${data._id}&label=${encodeURIComponent(data.name)}`}
               className="rounded-lg border border-brand-secondary/30 px-3 py-2 text-sm font-medium hover:border-brand-secondary/60"
             >
               📻 Radio

@@ -16,6 +16,13 @@ export interface PlayerTrack {
 
 export type RepeatMode = 'off' | 'all' | 'one';
 
+/** Semilla de la radio activa (para auto-extender la cola). */
+export interface RadioSeed {
+  type: 'track' | 'artist' | 'genre';
+  id: string;
+  label?: string;
+}
+
 interface PlayerState {
   queue: PlayerTrack[];
   index: number;
@@ -25,9 +32,14 @@ interface PlayerState {
   volume: number;
   currentTime: number;
   duration: number;
+  radioSeed: RadioSeed | null;
 
   playQueue: (tracks: PlayerTrack[], startIndex?: number) => void;
   playTrack: (track: PlayerTrack) => void;
+  /** Inicia una radio: reproduce las pistas y recuerda la semilla para extender. */
+  playRadio: (tracks: PlayerTrack[], seed: RadioSeed) => void;
+  /** Agrega pistas al final de la cola (sin repetir), para la radio infinita. */
+  appendRadioTracks: (tracks: PlayerTrack[]) => void;
   setPlaying: (playing: boolean) => void;
   togglePlay: () => void;
   next: () => void;
@@ -52,11 +64,21 @@ export const usePlayerStore = create<PlayerState>()(
       volume: 0.8,
       currentTime: 0,
       duration: 0,
+      radioSeed: null,
       _pendingSeek: null,
 
       playQueue: (tracks, startIndex = 0) =>
-        set({ queue: tracks, index: startIndex, isPlaying: true, currentTime: 0 }),
-      playTrack: (track) => set({ queue: [track], index: 0, isPlaying: true, currentTime: 0 }),
+        set({ queue: tracks, index: startIndex, isPlaying: true, currentTime: 0, radioSeed: null }),
+      playTrack: (track) =>
+        set({ queue: [track], index: 0, isPlaying: true, currentTime: 0, radioSeed: null }),
+      playRadio: (tracks, seed) =>
+        set({ queue: tracks, index: 0, isPlaying: true, currentTime: 0, radioSeed: seed }),
+      appendRadioTracks: (tracks) =>
+        set((s) => {
+          const seen = new Set(s.queue.map((t) => t._id));
+          const fresh = tracks.filter((t) => !seen.has(t._id));
+          return fresh.length ? { queue: [...s.queue, ...fresh] } : {};
+        }),
       setPlaying: (isPlaying) => set({ isPlaying }),
       togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying && s.index >= 0 ? true : !s.isPlaying })),
 
