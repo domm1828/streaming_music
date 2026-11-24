@@ -14,7 +14,7 @@ export class OtpCode {
   @Prop({ required: true })
   codeHash!: string;
 
-  @Prop({ required: true, enum: ['email-verify', 'password-reset'] })
+  @Prop({ type: String, required: true, enum: ['email-verify', 'password-reset'] })
   purpose!: OtpPurpose;
 
   @Prop({ required: true })

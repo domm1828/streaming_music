@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Button } from '../components/ui';
 import { useLogout } from '../features/auth/auth-queries';
 import { useAuth } from '../features/auth/use-auth';
+import { TwoFactorSettings } from '../features/auth/TwoFactorSettings';
 
 export function AccountPage() {
   const { user } = useAuth();
@@ -25,10 +26,22 @@ export function AccountPage() {
           <Row label="Roles" value={user.roles.join(', ') || '—'} />
         </dl>
       )}
-      <div className="mt-6 max-w-xs">
-        <Button type="button" onClick={onLogout} disabled={logout.isPending}>
-          Cerrar sesión
-        </Button>
+      <div className="mt-6">
+        <TwoFactorSettings />
+      </div>
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          to="/account/profile"
+          className="rounded-lg border border-brand-secondary/40 px-4 py-2.5 text-sm font-semibold hover:border-brand-secondary"
+        >
+          Editar perfil
+        </Link>
+        <div className="max-w-xs">
+          <Button type="button" onClick={onLogout} disabled={logout.isPending}>
+            Cerrar sesión
+          </Button>
+        </div>
       </div>
     </main>
   );

@@ -52,3 +52,4 @@ export class Artist {
 
 export const ArtistSchema = SchemaFactory.createForClass(Artist);
 ArtistSchema.index({ name: 'text' });
+ArtistSchema.index({ followers: -1, views: -1 }); // artistas populares

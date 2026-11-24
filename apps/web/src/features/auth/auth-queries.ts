@@ -12,6 +12,12 @@ interface RegisterPayload {
 interface LoginPayload {
   email: string;
   password: string;
+  twoFactorCode?: string;
+}
+
+export type LoginResult = AuthResult | { twoFactorRequired: true };
+export function isTwoFactorRequired(r: LoginResult): r is { twoFactorRequired: true } {
+  return (r as { twoFactorRequired?: boolean }).twoFactorRequired === true;
 }
 
 async function post<T>(url: string, body: unknown): Promise<T> {
@@ -30,8 +36,10 @@ export function useRegister() {
 export function useLogin() {
   const setAuth = useAuthStore((s) => s.setAuth);
   return useMutation({
-    mutationFn: (payload: LoginPayload) => post<AuthResult>('auth/login', payload),
-    onSuccess: (result) => setAuth(result),
+    mutationFn: (payload: LoginPayload) => post<LoginResult>('auth/login', payload),
+    onSuccess: (result) => {
+      if (!isTwoFactorRequired(result)) setAuth(result);
+    },
   });
 }
 

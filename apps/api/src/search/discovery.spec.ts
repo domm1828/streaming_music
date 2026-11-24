@@ -15,6 +15,7 @@ import { CatalogModule } from '../catalog/catalog.module';
 import { PlaylistsModule } from '../playlists/playlists.module';
 import { PlaylistsService } from '../playlists/playlists.service';
 import { StorageModule } from '../storage/storage.module';
+import { GeoModule } from '../geo/geo.module';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
 import { ChannelsModule } from '../channels/channels.module';
@@ -46,6 +47,7 @@ describe('Search & Discovery (e2e, in-memory Mongo)', () => {
         ScheduleModule.forRoot(),
         MongooseModule.forRoot(mongod.getUri()),
         StorageModule,
+        GeoModule,
         SettingsModule,
         UsersModule,
         CatalogModule,

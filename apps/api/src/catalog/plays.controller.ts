@@ -39,6 +39,7 @@ export class PlaysController {
     await this.service.log(dto.trackId, user?.id ?? null, {
       platform: (req.headers['sec-ch-ua-platform'] as string) ?? null,
       device: req.headers['user-agent'] ?? null,
+      ip: (req.headers['x-forwarded-for'] as string) ?? req.ip ?? null,
     });
     return { message: 'Reproducción registrada' };
   }

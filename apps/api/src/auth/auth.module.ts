@@ -7,9 +7,15 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
 import { TokensService } from './tokens.service';
+import { TwoFactorService } from './two-factor.service';
+import { TwoFactorController } from './two-factor.controller';
+import { SocialAuthService } from './social-auth.service';
+import { SocialAuthController } from './social-auth.controller';
+import { GoogleOAuthService } from './google-oauth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpCode, OtpCodeSchema } from './schemas/otp-code.schema';
 import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token.schema';
+import { SocialProfile, SocialProfileSchema } from './schemas/social-profile.schema';
 
 @Module({
   imports: [
@@ -19,10 +25,19 @@ import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token.schema
     MongooseModule.forFeature([
       { name: RefreshToken.name, schema: RefreshTokenSchema },
       { name: OtpCode.name, schema: OtpCodeSchema },
+      { name: SocialProfile.name, schema: SocialProfileSchema },
     ]),
   ],
-  providers: [AuthService, TokensService, OtpService, JwtStrategy],
-  controllers: [AuthController],
+  providers: [
+    AuthService,
+    TokensService,
+    OtpService,
+    TwoFactorService,
+    SocialAuthService,
+    GoogleOAuthService,
+    JwtStrategy,
+  ],
+  controllers: [AuthController, TwoFactorController, SocialAuthController],
   exports: [AuthService, TokensService],
 })
 export class AuthModule {}

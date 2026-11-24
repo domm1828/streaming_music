@@ -22,6 +22,8 @@ export interface PlaybackSource {
   trackId: string;
   type: Track['srcType'];
   src: string | null;
+  /** URL firmada temporal para entrega controlada (audio/hls local). */
+  signedSrc: string | null;
   duration: number;
 }
 
@@ -128,10 +130,14 @@ export class TracksService {
   /** Resuelve la fuente reproducible según el tipo de la pista. */
   async resolvePlayback(id: string): Promise<PlaybackSource> {
     const track = await this.getOrFail(id);
+    // Para audio/HLS alojado localmente, entregar una URL firmada temporal.
+    const isLocal = (track.srcType === 'audio' || track.srcType === 'hls') && track.src?.startsWith('/uploads/');
+    const signedSrc = isLocal && track.src ? await this.storage.signedUrl(track.src, 3600) : null;
     return {
       trackId: String(track._id),
       type: track.srcType,
       src: track.src,
+      signedSrc,
       duration: track.duration,
     };
   }

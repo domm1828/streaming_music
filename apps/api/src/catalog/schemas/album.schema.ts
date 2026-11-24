@@ -47,3 +47,5 @@ export class Album {
 
 export const AlbumSchema = SchemaFactory.createForClass(Album);
 AlbumSchema.index({ name: 'text' });
+AlbumSchema.index({ createdAt: -1 }); // feed de novedades
+AlbumSchema.index({ artists: 1 });

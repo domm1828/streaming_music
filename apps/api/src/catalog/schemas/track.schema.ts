@@ -63,8 +63,13 @@ export class Track {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: Genre.name }], default: [] })
   genres!: Types.ObjectId[];
+
+  /** Vector de embedding para búsqueda/recomendación semántica (Phase 8). */
+  @Prop({ type: [Number], default: undefined, select: false })
+  embedding?: number[];
 }
 
 export const TrackSchema = SchemaFactory.createForClass(Track);
 TrackSchema.index({ name: 'text' });
 TrackSchema.index({ 'artists.artist': 1 });
+TrackSchema.index({ plays: -1 }); // top tracks / tendencias

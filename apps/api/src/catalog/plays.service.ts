@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { buildPaginationMeta } from '@stream-music/shared';
+import { GeoService } from '../geo/geo.service';
 import { TrackPlay, TrackPlayDocument } from './schemas/track-play.schema';
 import { ListenUsage, ListenUsageDocument } from './schemas/listen-usage.schema';
 import { TracksService } from './tracks.service';
@@ -10,6 +11,7 @@ import { TracksService } from './tracks.service';
 export interface PlayMeta {
   platform?: string | null;
   device?: string | null;
+  ip?: string | null;
 }
 
 /** Periodo mensual actual en formato YYYY-MM. */
@@ -24,6 +26,7 @@ export class PlaysService {
     @InjectModel(ListenUsage.name) private readonly usageModel: Model<ListenUsageDocument>,
     private readonly tracks: TracksService,
     private readonly config: ConfigService,
+    private readonly geo: GeoService,
   ) {}
 
   async log(trackId: string, userId: string | null, meta: PlayMeta): Promise<void> {
@@ -32,6 +35,7 @@ export class PlaysService {
       user: userId ? new Types.ObjectId(userId) : null,
       platform: meta.platform ?? null,
       device: meta.device ?? null,
+      country: this.geo.country(meta.ip),
     });
     await this.tracks.incrementPlays(trackId);
 

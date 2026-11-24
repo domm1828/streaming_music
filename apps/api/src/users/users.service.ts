@@ -44,6 +44,10 @@ export class UsersService {
     return this.userModel.findOne({ email: email.toLowerCase() }).select('+passwordHash').exec();
   }
 
+  findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email: email.toLowerCase() }).exec();
+  }
+
   findById(id: string): Promise<UserDocument | null> {
     if (!Types.ObjectId.isValid(id)) return Promise.resolve(null);
     return this.userModel.findById(id).exec();
@@ -132,6 +136,35 @@ export class UsersService {
       .exec();
     if (!user) throw new NotFoundException('Usuario no encontrado');
     return user;
+  }
+
+  // --- 2FA ---
+  async setTwoFactorSecret(userId: string, secret: string): Promise<void> {
+    await this.userModel
+      .updateOne({ _id: userId }, { $set: { 'twoFactor.secret': secret, 'twoFactor.confirmedAt': null } })
+      .exec();
+  }
+
+  async confirmTwoFactor(userId: string, recoveryHashes: string[]): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: userId },
+        { $set: { 'twoFactor.confirmedAt': new Date(), 'twoFactor.recoveryCodes': recoveryHashes } },
+      )
+      .exec();
+  }
+
+  async disableTwoFactor(userId: string): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: userId },
+        { $set: { 'twoFactor.secret': null, 'twoFactor.recoveryCodes': [], 'twoFactor.confirmedAt': null } },
+      )
+      .exec();
+  }
+
+  async setRecoveryCodes(userId: string, hashes: string[]): Promise<void> {
+    await this.userModel.updateOne({ _id: userId }, { $set: { 'twoFactor.recoveryCodes': hashes } }).exec();
   }
 
   async setBanned(id: string, banned: boolean) {
