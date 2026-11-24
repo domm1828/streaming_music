@@ -4,6 +4,7 @@ import { TrackList } from '../features/catalog/TrackList';
 import { MediaHeader, PlayButton } from '../components/media';
 import { usePlayerStore } from '../features/player/player-store';
 import { LikeButton } from '../features/social/LikeButton';
+import { ShareButton } from '../features/social/ShareButton';
 
 export function AlbumPage() {
   const { id = '' } = useParams();
@@ -40,6 +41,7 @@ export function AlbumPage() {
           <>
             <PlayButton onClick={() => playQueue(tracks, 0)} disabled={!tracks.length} />
             <LikeButton type="album" id={data._id} label />
+            <ShareButton path={`/album/${data._id}`} title={data.name} embedPath={`/embed/album/${data._id}`} />
           </>
         }
       />

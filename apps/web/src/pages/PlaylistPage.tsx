@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { TrackList } from '../features/catalog/TrackList';
 import { MediaHeader, PlayButton, pillClass } from '../components/media';
 import { FollowButton } from '../features/social/FollowButton';
+import { ShareButton } from '../features/social/ShareButton';
 import {
   useDeletePlaylist,
   usePlaylist,
@@ -68,6 +69,7 @@ export function PlaylistPage() {
         actions={
           <>
             <PlayButton onClick={() => playQueue(tracks, 0)} disabled={!tracks.length} />
+            {data.public && <ShareButton path={`/playlist/${id}`} title={data.name} />}
             {!data.isOwner && <FollowButton type="playlist" id={id} />}
             {data.isOwner && (
               <>

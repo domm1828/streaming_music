@@ -103,6 +103,16 @@ export class TokensService {
       .exec();
   }
 
+  /** Revoca todas las sesiones del usuario salvo la del refresh token indicado. */
+  async revokeOthers(userId: string, keepRaw: string): Promise<void> {
+    await this.refreshModel
+      .updateMany(
+        { user: new Types.ObjectId(userId), revokedAt: null, tokenHash: { $ne: this.hash(keepRaw) } },
+        { revokedAt: new Date() },
+      )
+      .exec();
+  }
+
   async revokeSession(userId: string, sessionId: string): Promise<void> {
     if (!Types.ObjectId.isValid(sessionId)) return;
     await this.refreshModel

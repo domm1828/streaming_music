@@ -1,7 +1,15 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiResponse, AuthResult, BootstrapData } from '@stream-music/shared';
 import { apiClient } from '../../lib/api-client';
 import { useAuthStore } from './auth-store';
+
+export interface SessionInfo {
+  id: string;
+  userAgent: string | null;
+  ip: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
 
 interface RegisterPayload {
   name: string;
@@ -73,6 +81,50 @@ export function useVerifyEmail() {
   return useMutation({
     mutationFn: (payload: { email: string; code: string }) =>
       post<{ message: string }>('auth/verify-email', payload),
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (payload: { currentPassword: string; newPassword: string }) =>
+      post<{ message: string }>('auth/password', payload),
+  });
+}
+
+export function useSessions() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: ['sessions'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiResponse<SessionInfo[]>>('auth/sessions');
+      return data.data;
+    },
+    enabled: Boolean(accessToken),
+  });
+}
+
+export function useRevokeSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`auth/sessions/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
+  });
+}
+
+export function useRevokeOtherSessions() {
+  const qc = useQueryClient();
+  const refreshToken = useAuthStore((s) => s.refreshToken);
+  return useMutation({
+    mutationFn: () => apiClient.delete('auth/sessions', { data: { refreshToken } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
+  });
+}
+
+export function useDeleteAccount() {
+  const clear = useAuthStore((s) => s.clear);
+  return useMutation({
+    mutationFn: (password: string) => apiClient.delete('auth/account', { data: { password } }),
+    onSuccess: () => clear(),
   });
 }
 
