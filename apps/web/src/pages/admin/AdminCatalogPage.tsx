@@ -23,10 +23,17 @@ import {
   useUpdateArtist,
   useUpdateTrack,
   useUploadImage,
+  useUpdateGenre,
   useUpsertLyrics,
   type AdminChannel,
+  type GenreStats,
 } from '../../features/admin/catalog-admin-queries';
-import type { Album, Artist, Genre, Track } from '../../features/catalog/types';
+import type { Album, Artist, Track } from '../../features/catalog/types';
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString();
+}
 
 const TABS = [
   { key: 'artists', label: 'Artistas' },
@@ -304,15 +311,42 @@ function TracksTab() {
 function GenresTab() {
   const { data, isLoading } = useAdminGenres();
   const create = useCreateGenre();
+  const update = useUpdateGenre();
   const del = useDeleteGenre();
-  const columns: Column<Genre>[] = [
-    { key: 'displayName', header: 'Nombre' },
-    { key: 'name', header: 'Slug' },
+  const upload = useUploadImage();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  const pick = (id: string, file: File) => {
+    setBusyId(id);
+    upload.mutate(file, {
+      onSuccess: (url) => update.mutate({ id, image: url }, { onSettled: () => setBusyId(null) }),
+      onError: () => setBusyId(null),
+    });
+  };
+
+  const rows = (data ?? []).filter((g) =>
+    search.trim() ? g.displayName.toLowerCase().includes(search.trim().toLowerCase()) : true,
+  );
+
+  const columns: Column<GenreStats>[] = [
+    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} uploading={busyId === g._id} onPick={(f) => pick(g._id, f)} /> },
+    { key: 'displayName', header: 'Nombre', render: (g) => <EditableText value={g.displayName} onSave={(displayName) => update.mutate({ id: g._id, displayName })} /> },
+    { key: 'name', header: 'Slug', render: (g) => <span className="text-muted">{g.name}</span> },
+    { key: 'artistsCount', header: 'Artistas', render: (g) => <span className="tabular-nums">{g.artistsCount}</span> },
+    { key: 'updatedAt', header: 'Actualizado', render: (g) => <span className="text-muted">{fmtDate(g.updatedAt)}</span> },
   ];
   return (
     <div className="space-y-3">
       <NewItem onAdd={(n) => create.mutate(n)} placeholder="Nombre del género" />
-      <DataTable columns={columns} rows={data ?? []} rowKey={(g) => g._id} loading={isLoading} actions={(g) => <DelButton onClick={() => del.mutate(g._id)} />} />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(g) => g._id}
+        loading={isLoading}
+        search={{ value: search, onChange: setSearch, placeholder: 'Buscar géneros…' }}
+        actions={(g) => <DelButton onClick={() => del.mutate(g._id)} />}
+      />
     </div>
   );
 }
