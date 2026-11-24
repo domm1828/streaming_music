@@ -118,18 +118,26 @@ describe('Advanced & hardening (e2e, in-memory Mongo)', () => {
   });
 
   describe('Login social', () => {
+    const meta = { userAgent: null, ip: null };
+    const profile = { providerId: 'g1', email: 'social@test.io', emailVerified: true, name: 'Social' };
+
     it('crea la cuenta la primera vez y la reusa después, emitiendo JWT', async () => {
-      const meta = { userAgent: null, ip: null };
-      const first = await social.loginWithProfile('google', { providerId: 'g1', email: 'social@test.io', name: 'Social' }, meta);
+      const first = await social.loginWithProfile('google', profile, meta);
       expect(first.accessToken).toBeTruthy();
       expect(first.user.email).toBe('social@test.io');
 
-      const second = await social.loginWithProfile('google', { providerId: 'g1', email: 'social@test.io', name: 'Social' }, meta);
+      const second = await social.loginWithProfile('google', profile, meta);
       expect(second.user.id).toBe(first.user.id); // misma cuenta
 
-      // Mismo email, otro proveedorId → se enlaza a la cuenta existente.
-      const linked = await social.loginWithProfile('google', { providerId: 'g2', email: 'social@test.io', name: 'Social' }, meta);
+      // Mismo email VERIFICADO, otro proveedorId → se enlaza a la cuenta existente.
+      const linked = await social.loginWithProfile('google', { ...profile, providerId: 'g2' }, meta);
       expect(linked.user.id).toBe(first.user.id);
+    });
+
+    it('rechaza enlazar/crear cuando el email no está verificado (anti account-takeover)', async () => {
+      await expect(
+        social.loginWithProfile('google', { providerId: 'evil', email: 'social@test.io', emailVerified: false, name: 'Evil' }, meta),
+      ).rejects.toThrow();
     });
   });
 

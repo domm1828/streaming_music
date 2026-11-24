@@ -55,11 +55,18 @@ export class GoogleOAuthService {
       headers: { Authorization: `Bearer ${token.access_token}` },
     });
     if (!infoRes.ok) throw new Error(`Google userinfo → ${infoRes.status}`);
-    const info = (await infoRes.json()) as { sub: string; email: string; name?: string; picture?: string };
+    const info = (await infoRes.json()) as {
+      sub: string;
+      email: string;
+      email_verified?: boolean;
+      name?: string;
+      picture?: string;
+    };
 
     return {
       providerId: info.sub,
       email: info.email,
+      emailVerified: info.email_verified === true,
       name: info.name ?? info.email.split('@')[0],
       image: info.picture ?? null,
     };
