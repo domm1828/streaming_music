@@ -1,41 +1,42 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Search } from 'lucide-react';
 import { TrackList } from '../features/catalog/TrackList';
+import { MediaCard, MediaGrid } from '../components/MediaCard';
+import { Tabs } from '../components/Tabs';
+import { SectionHeader } from '../components/media';
 import { useDebounce } from '../lib/use-debounce';
-import {
-  useSearchOverview,
-  useSearchType,
-  useSuggest,
-} from '../features/discovery/discovery-queries';
+import { useSearchOverview, useSearchType, useSuggest } from '../features/discovery/discovery-queries';
 import type { SearchableType } from '../features/discovery/types';
 import type { Album, ArtistRef, Track } from '../features/catalog/types';
 import type { PlaylistSummary } from '../features/library/types';
 
 type Tab = 'all' | SearchableType;
-const TABS: { key: Tab; label: string }[] = [
+const TABS = [
   { key: 'all', label: 'Todo' },
   { key: 'track', label: 'Canciones' },
   { key: 'artist', label: 'Artistas' },
   { key: 'album', label: 'Álbumes' },
   { key: 'playlist', label: 'Playlists' },
-];
+] as const;
 
-function CardGrid({ items, kind }: { items: { _id: string; name: string }[]; kind: string }) {
-  if (!items.length) return <p className="opacity-60">Sin resultados.</p>;
-  const gradient = kind === 'artist' ? 'from-brand-primary to-brand-secondary' : 'from-brand-secondary to-brand-accent';
+type CardItem = { _id: string; name: string; image?: string | null };
+
+function CardGrid({ items, kind }: { items: CardItem[]; kind: string }) {
+  if (!items.length) return <p className="text-muted">Sin resultados.</p>;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+    <MediaGrid>
       {items.map((it) => (
-        <Link
+        <MediaCard
           key={it._id}
           to={`/${kind}/${it._id}`}
-          className="rounded-xl border border-brand-secondary/15 bg-brand-primary/5 p-3 hover:border-brand-secondary/40"
-        >
-          <div className={`mb-2 aspect-square rounded-lg bg-gradient-to-br ${gradient}`} />
-          <p className="truncate text-sm font-medium">{it.name}</p>
-        </Link>
+          title={it.name}
+          image={it.image ?? null}
+          shape={kind === 'artist' ? 'round' : 'square'}
+          gradient={kind === 'artist' ? 'from-brand-primary to-brand-secondary' : 'from-brand-secondary to-brand-accent'}
+        />
       ))}
-    </div>
+    </MediaGrid>
   );
 }
 
@@ -58,8 +59,9 @@ export function SearchPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="relative">
+    <div className="space-y-6 pt-2">
+      <div className="relative max-w-2xl">
+        <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -67,22 +69,27 @@ export function SearchPage() {
           onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={(e) => e.key === 'Enter' && onSubmit(input.trim())}
           placeholder="Buscar artistas, canciones, álbumes…"
-          className="w-full rounded-xl border border-brand-secondary/30 bg-transparent px-4 py-3 text-lg outline-none focus:border-brand-secondary"
+          className="w-full rounded-full border border-divider bg-chip py-3 pl-11 pr-4 text-lg outline-none focus:border-brand-secondary"
           autoFocus
         />
         {focused && suggest.data && suggest.data.suggestions.length > 0 && (
-          <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-brand-secondary/20 bg-[color:var(--surface)] shadow-lg">
+          <ul className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-divider bg-elevated shadow-xl">
             {suggest.data.suggestions.map((s) => (
               <li key={`${s.type}-${s.id}`}>
                 <button
                   type="button"
                   onMouseDown={() => navigate(`/${s.type}/${s.id}`)}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-brand-primary/10"
+                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-main/10"
                 >
-                  <span className="rounded bg-brand-secondary/15 px-1.5 py-0.5 text-xs uppercase opacity-70">
-                    {s.type}
-                  </span>
+                  {s.image ? (
+                    <img src={s.image} alt="" className={`h-9 w-9 object-cover ${s.type === 'artist' ? 'rounded-full' : 'rounded'}`} />
+                  ) : (
+                    <span className="flex h-9 w-9 items-center justify-center rounded bg-chip text-xs uppercase text-muted">
+                      {s.type[0]}
+                    </span>
+                  )}
                   <span className="truncate">{s.name}</span>
+                  <span className="ml-auto text-xs uppercase text-muted">{s.type}</span>
                 </button>
               </li>
             ))}
@@ -91,23 +98,10 @@ export function SearchPage() {
       </div>
 
       {q.length === 0 ? (
-        <p className="opacity-60">Escribí algo para buscar.</p>
+        <p className="text-muted">Escribí algo para buscar.</p>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2 border-b border-brand-secondary/20 pb-2">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  tab === t.key ? 'bg-brand-primary text-white' : 'hover:bg-brand-primary/10'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={TABS} value={tab} onChange={setTab} />
 
           {tab === 'all' ? (
             <div className="space-y-8">
@@ -115,38 +109,38 @@ export function SearchPage() {
                 <>
                   {(overview.data.results.track?.length ?? 0) > 0 && (
                     <section>
-                      <h2 className="mb-2 text-lg font-semibold">Canciones</h2>
-                      <TrackList tracks={overview.data.results.track ?? []} />
+                      <SectionHeader title="Canciones" />
+                      <TrackList tracks={overview.data.results.track ?? []} showAlbum />
                     </section>
                   )}
                   {(overview.data.results.artist?.length ?? 0) > 0 && (
                     <section>
-                      <h2 className="mb-2 text-lg font-semibold">Artistas</h2>
+                      <SectionHeader title="Artistas" />
                       <CardGrid items={overview.data.results.artist ?? []} kind="artist" />
                     </section>
                   )}
                   {(overview.data.results.album?.length ?? 0) > 0 && (
                     <section>
-                      <h2 className="mb-2 text-lg font-semibold">Álbumes</h2>
+                      <SectionHeader title="Álbumes" />
                       <CardGrid items={overview.data.results.album ?? []} kind="album" />
                     </section>
                   )}
                   {(overview.data.results.playlist?.length ?? 0) > 0 && (
                     <section>
-                      <h2 className="mb-2 text-lg font-semibold">Playlists</h2>
+                      <SectionHeader title="Playlists" />
                       <CardGrid items={overview.data.results.playlist ?? []} kind="playlist" />
                     </section>
                   )}
                   {Object.values(overview.data.results).every((a) => (a?.length ?? 0) === 0) && (
-                    <p className="opacity-60">No encontramos nada para “{q}”.</p>
+                    <p className="text-muted">No encontramos nada para “{q}”.</p>
                   )}
                 </>
               )}
             </div>
           ) : tab === 'track' ? (
-            <TrackList tracks={(typed.data?.data ?? []) as Track[]} />
+            <TrackList tracks={(typed.data?.data ?? []) as Track[]} showAlbum />
           ) : (
-            <CardGrid items={(typed.data?.data ?? []) as { _id: string; name: string }[]} kind={tab} />
+            <CardGrid items={(typed.data?.data ?? []) as CardItem[]} kind={tab} />
           )}
         </>
       )}

@@ -1,10 +1,16 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { Radio } from 'lucide-react';
 import { useArtist, useArtistAlbums, useArtistTracks } from '../features/catalog/catalog-queries';
 import { TrackList } from '../features/catalog/TrackList';
-import { Button } from '../components/ui';
+import { MediaCard, MediaGrid } from '../components/MediaCard';
+import { Tabs } from '../components/Tabs';
+import { MediaHeader, PlayButton, pillClass } from '../components/media';
 import { usePlayerStore } from '../features/player/player-store';
 import { FollowButton } from '../features/social/FollowButton';
 import { LikeButton } from '../features/social/LikeButton';
+
+type Tab = 'popular' | 'discography' | 'about';
 
 export function ArtistPage() {
   const { id = '' } = useParams();
@@ -12,60 +18,74 @@ export function ArtistPage() {
   const tracks = useArtistTracks(id);
   const albums = useArtistAlbums(id);
   const { playQueue } = usePlayerStore.getState();
+  const [tab, setTab] = useState<Tab>('popular');
 
-  if (artist.isLoading) return <p className="opacity-60">Cargando…</p>;
+  if (artist.isLoading) return <p className="text-muted">Cargando…</p>;
   if (artist.isError || !artist.data) return <p className="text-red-500">Artista no encontrado.</p>;
 
+  const hasAlbums = (albums.data?.data.length ?? 0) > 0;
+  const TABS = [
+    { key: 'popular' as const, label: 'Popular' },
+    ...(hasAlbums ? [{ key: 'discography' as const, label: 'Discografía' }] : []),
+    { key: 'about' as const, label: 'Sobre' },
+  ];
+
   return (
-    <div className="space-y-8">
-      <header className="flex items-end gap-6">
-        <div className="h-32 w-32 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-secondary" />
-        <div>
-          <h1 className="text-4xl font-bold">{artist.data.name}</h1>
-          {artist.data.bio && <p className="mt-2 max-w-xl text-sm opacity-70">{artist.data.bio}</p>}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="w-40">
-              <Button
-                type="button"
-                onClick={() => tracks.data && playQueue(tracks.data.data, 0)}
-                disabled={!tracks.data?.data.length}
-              >
-                ▶ Reproducir
-              </Button>
-            </div>
+    <div className="space-y-8 pt-2">
+      <MediaHeader
+        image={artist.data.image}
+        shape="round"
+        kicker="Artista"
+        title={artist.data.name}
+        meta={artist.data.genres && artist.data.genres.length > 0 ? artist.data.genres.map((g) => g.displayName).join(' · ') : undefined}
+        actions={
+          <>
+            <PlayButton
+              onClick={() => tracks.data && playQueue(tracks.data.data, 0)}
+              disabled={!tracks.data?.data.length}
+            />
             <FollowButton type="artist" id={id} />
             <LikeButton type="artist" id={id} label />
             <Link
               to={`/radio?seedType=artist&seedId=${id}&label=${encodeURIComponent(artist.data.name)}`}
-              className="rounded-lg border border-brand-secondary/30 px-3 py-2 text-sm font-medium hover:border-brand-secondary/60"
+              className={pillClass()}
             >
-              📻 Radio
+              <Radio size={16} /> Radio
             </Link>
-          </div>
+          </>
+        }
+      />
+
+      <Tabs tabs={TABS} value={tab} onChange={setTab} />
+
+      {tab === 'popular' && tracks.data && <TrackList tracks={tracks.data.data} showAlbum />}
+
+      {tab === 'discography' && (
+        <MediaGrid>
+          {albums.data?.data.map((album) => (
+            <MediaCard
+              key={album._id}
+              to={`/album/${album._id}`}
+              title={album.name}
+              image={album.image}
+              subtitle={album.releaseDate ? new Date(album.releaseDate).getFullYear().toString() : undefined}
+              gradient="from-brand-secondary to-brand-accent"
+            />
+          ))}
+        </MediaGrid>
+      )}
+
+      {tab === 'about' && (
+        <div className="max-w-2xl space-y-4">
+          {artist.data.bio ? (
+            <p className="whitespace-pre-wrap leading-relaxed text-main/90">{artist.data.bio}</p>
+          ) : (
+            <p className="text-muted">Este artista todavía no tiene biografía.</p>
+          )}
+          {typeof artist.data.views === 'number' && (
+            <p className="text-sm text-muted">{artist.data.views.toLocaleString()} reproducciones</p>
+          )}
         </div>
-      </header>
-
-      <section>
-        <h2 className="mb-3 text-xl font-semibold">Pistas populares</h2>
-        {tracks.data && <TrackList tracks={tracks.data.data} />}
-      </section>
-
-      {albums.data && albums.data.data.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">Álbumes</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {albums.data.data.map((album) => (
-              <Link
-                key={album._id}
-                to={`/album/${album._id}`}
-                className="rounded-xl border border-brand-secondary/15 bg-brand-primary/5 p-3 hover:border-brand-secondary/40"
-              >
-                <div className="mb-2 aspect-square rounded-lg bg-gradient-to-br from-brand-secondary to-brand-accent" />
-                <p className="truncate font-medium">{album.name}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
       )}
     </div>
   );
