@@ -7,6 +7,7 @@ import {
   useImportNewReleases,
   useImportStatus,
   useImportTopGenres,
+  useImportYoutube,
   useProviderSearch,
   type ImportJob,
   type ImportJobStatus,
@@ -50,6 +51,8 @@ export function AdminImportPage() {
   const newReleases = useImportNewReleases();
   const featured = useImportFeaturedPlaylists();
   const topGenres = useImportTopGenres();
+  const youtube = useImportYoutube();
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   const configured = status.data?.providerConfigured;
 
@@ -103,6 +106,31 @@ export function AdminImportPage() {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-brand-secondary/20 bg-brand-primary/5 p-5">
+        <h2 className="font-semibold">Importar audio desde YouTube</h2>
+        <p className="text-sm opacity-70">
+          Pegá la URL de un video de YouTube: se descarga el audio y se agrega como pista al catálogo
+          (reproducible y descargable). Respetá los derechos del contenido.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=…"
+            className="min-w-0 flex-1 rounded-lg border border-brand-secondary/30 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-secondary"
+          />
+          <button
+            type="button"
+            onClick={() => youtubeUrl.trim() && youtube.mutate(youtubeUrl.trim(), { onSuccess: () => setYoutubeUrl('') })}
+            disabled={youtube.isPending || !youtubeUrl.trim()}
+            className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            Importar
+          </button>
+        </div>
+        {youtube.isError && <p className="text-sm text-red-500">No se pudo importar. Revisá la URL.</p>}
       </section>
 
       {configured && (

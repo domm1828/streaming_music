@@ -4,8 +4,14 @@ import { User } from '../../users/schemas/user.schema';
 
 export type ImportJobDocument = HydratedDocument<ImportJob>;
 
-export type ImportJobType = 'artist' | 'newReleases' | 'featuredPlaylists' | 'topGenres';
-export const IMPORT_JOB_TYPES: ImportJobType[] = ['artist', 'newReleases', 'featuredPlaylists', 'topGenres'];
+export type ImportJobType = 'artist' | 'newReleases' | 'featuredPlaylists' | 'topGenres' | 'youtube';
+export const IMPORT_JOB_TYPES: ImportJobType[] = [
+  'artist',
+  'newReleases',
+  'featuredPlaylists',
+  'topGenres',
+  'youtube',
+];
 
 export type ImportJobStatus = 'pending' | 'running' | 'done' | 'failed';
 

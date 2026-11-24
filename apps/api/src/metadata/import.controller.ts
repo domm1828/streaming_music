@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
-import { ImportArtistDto, ProviderSearchDto } from './dto/import.dto';
+import { ImportArtistDto, ImportYoutubeDto, ProviderSearchDto } from './dto/import.dto';
 import { ImportService } from './import.service';
 import { LyricsImportService } from './lyrics-import.service';
 
@@ -60,6 +60,13 @@ export class ImportController {
   @HttpCode(HttpStatus.ACCEPTED)
   importArtist(@Body() dto: ImportArtistDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.createAndRun('artist', dto.externalId, user.id);
+  }
+
+  /** Descarga el audio de un video de YouTube y lo agrega al catálogo. */
+  @Post('youtube')
+  @HttpCode(HttpStatus.ACCEPTED)
+  importYoutube(@Body() dto: ImportYoutubeDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.createAndRun('youtube', dto.url, user.id);
   }
 
   @Post('new-releases')

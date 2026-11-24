@@ -68,6 +68,14 @@ export function useImportArtist() {
   });
 }
 
+export function useImportYoutube() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (url: string) => mutate<ImportJob>('post', 'admin/import/youtube', { url }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['import', 'jobs'] }),
+  });
+}
+
 export const useImportNewReleases = () => useImportMutation('admin/import/new-releases');
 export const useImportFeaturedPlaylists = () => useImportMutation('admin/import/featured-playlists');
 export const useImportTopGenres = () => useImportMutation('admin/import/top-genres');
