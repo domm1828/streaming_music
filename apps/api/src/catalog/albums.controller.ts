@@ -1,9 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PermissionsGuard } from '../auth/guards/permissions.guard';
-import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { AlbumsService } from './albums.service';
 import { CatalogListDto, CreateAlbumDto, UpdateAlbumDto } from './dto/catalog.dto';
@@ -22,26 +19,24 @@ export class AlbumsController {
     return this.service.findWithTracks(id);
   }
 
+  // Cualquier usuario autenticado puede crear un álbum (queda como dueño); editar/borrar: dueño o admin.
   @Post()
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.CATALOG_MANAGE)
+  @UseGuards(JwtAuthGuard)
   create(@Body() dto: CreateAlbumDto, @CurrentUser() user: AuthenticatedUser) {
     return this.service.create(dto, user.id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.CATALOG_MANAGE)
-  update(@Param('id') id: string, @Body() dto: UpdateAlbumDto) {
-    return this.service.update(id, dto);
+  @UseGuards(JwtAuthGuard)
+  update(@Param('id') id: string, @Body() dto: UpdateAlbumDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.CATALOG_MANAGE)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id') id: string) {
-    await this.service.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.service.remove(id, user);
     return { message: 'Álbum eliminado' };
   }
 }

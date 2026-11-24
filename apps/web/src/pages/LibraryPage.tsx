@@ -4,7 +4,8 @@ import { Plus } from 'lucide-react';
 import { TrackList } from '../features/catalog/TrackList';
 import { MediaCard, MediaGrid } from '../components/MediaCard';
 import { Tabs } from '../components/Tabs';
-import { useCreatePlaylist, useFollowedPlaylists, useMyPlaylists } from '../features/playlists/playlist-queries';
+import { useFollowedPlaylists, useMyPlaylists } from '../features/playlists/playlist-queries';
+import { CreatePlaylistDialog } from '../features/playlists/CreatePlaylistDialog';
 import { useFollowing, useMyLikes } from '../features/social/social-queries';
 import { useHistory, useInsights, useListening } from '../features/profile/profile-queries';
 import type { Album, ArtistRef, Track } from '../features/catalog/types';
@@ -23,16 +24,16 @@ const TABS = [
 function PlaylistsTab() {
   const mine = useMyPlaylists();
   const followed = useFollowedPlaylists();
-  const create = useCreatePlaylist();
   const navigate = useNavigate();
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
     <div className="space-y-6">
+      <CreatePlaylistDialog open={showCreate} onClose={() => setShowCreate(false)} onCreated={(pl) => navigate(`/playlist/${pl._id}`)} />
       <button
         type="button"
-        onClick={() => create.mutate({ name: 'Nueva playlist' }, { onSuccess: (pl) => navigate(`/playlist/${pl._id}`) })}
-        disabled={create.isPending}
-        className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary-light disabled:opacity-60"
+        onClick={() => setShowCreate(true)}
+        className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary-light"
       >
         <Plus size={16} /> Crear playlist
       </button>
