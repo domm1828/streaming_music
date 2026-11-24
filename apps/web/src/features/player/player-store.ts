@@ -40,6 +40,16 @@ interface PlayerState {
   playRadio: (tracks: PlayerTrack[], seed: RadioSeed) => void;
   /** Agrega pistas al final de la cola (sin repetir), para la radio infinita. */
   appendRadioTracks: (tracks: PlayerTrack[]) => void;
+  /** Agrega pistas al final de la cola (si no hay nada sonando, empieza). */
+  addToQueue: (tracks: PlayerTrack[]) => void;
+  /** Inserta pistas justo después de la actual. */
+  playNext: (tracks: PlayerTrack[]) => void;
+  /** Salta a una posición de la cola. */
+  jumpTo: (index: number) => void;
+  /** Quita una pista de la cola por índice. */
+  removeFromQueue: (index: number) => void;
+  /** Reordena la cola moviendo una pista de `from` a `to`. */
+  reorderQueue: (from: number, to: number) => void;
   setPlaying: (playing: boolean) => void;
   togglePlay: () => void;
   next: () => void;
@@ -78,6 +88,48 @@ export const usePlayerStore = create<PlayerState>()(
           const seen = new Set(s.queue.map((t) => t._id));
           const fresh = tracks.filter((t) => !seen.has(t._id));
           return fresh.length ? { queue: [...s.queue, ...fresh] } : {};
+        }),
+      addToQueue: (tracks) =>
+        set((s) => {
+          if (!tracks.length) return {};
+          if (s.index < 0 || s.queue.length === 0) {
+            return { queue: tracks, index: 0, isPlaying: true, currentTime: 0, radioSeed: null };
+          }
+          return { queue: [...s.queue, ...tracks] };
+        }),
+      playNext: (tracks) =>
+        set((s) => {
+          if (!tracks.length) return {};
+          if (s.index < 0) return { queue: tracks, index: 0, isPlaying: true, currentTime: 0 };
+          const q = [...s.queue];
+          q.splice(s.index + 1, 0, ...tracks);
+          return { queue: q };
+        }),
+      jumpTo: (index) =>
+        set((s) =>
+          index >= 0 && index < s.queue.length ? { index, isPlaying: true, currentTime: 0 } : {},
+        ),
+      removeFromQueue: (index) =>
+        set((s) => {
+          if (index < 0 || index >= s.queue.length) return {};
+          const q = s.queue.filter((_, i) => i !== index);
+          let idx = s.index;
+          if (index < s.index) idx = s.index - 1;
+          else if (index === s.index) idx = Math.min(s.index, q.length - 1);
+          return { queue: q, index: idx };
+        }),
+      reorderQueue: (from, to) =>
+        set((s) => {
+          if (from === to || from < 0 || to < 0 || from >= s.queue.length || to >= s.queue.length) return {};
+          const q = [...s.queue];
+          const [moved] = q.splice(from, 1);
+          q.splice(to, 0, moved);
+          // Recalcular el índice actual tras el movimiento.
+          let idx = s.index;
+          if (from === s.index) idx = to;
+          else if (from < s.index && to >= s.index) idx = s.index - 1;
+          else if (from > s.index && to <= s.index) idx = s.index + 1;
+          return { queue: q, index: idx };
         }),
       setPlaying: (isPlaying) => set({ isPlaying }),
       togglePlay: () => set((s) => ({ isPlaying: !s.isPlaying && s.index >= 0 ? true : !s.isPlaying })),
