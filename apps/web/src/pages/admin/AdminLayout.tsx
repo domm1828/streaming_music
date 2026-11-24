@@ -4,28 +4,36 @@ const LINKS = [
   { to: '/admin/users', label: 'Usuarios' },
   { to: '/admin/catalog', label: 'Catálogo' },
   { to: '/admin/import', label: 'Importar' },
+  { to: '/admin/settings', label: 'Ajustes' },
+  { to: '/admin/moderation', label: 'Moderación' },
+  { to: '/admin/backstage', label: 'Backstage' },
+  { to: '/admin/pages', label: 'Páginas' },
 ];
 
 export function AdminLayout() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Administración</h1>
-      <nav className="flex flex-wrap gap-2 border-b border-brand-secondary/20 pb-2">
-        {LINKS.map((l) => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            className={({ isActive }) =>
-              `rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                isActive ? 'bg-brand-primary text-white' : 'hover:bg-brand-primary/10'
-              }`
-            }
-          >
-            {l.label}
-          </NavLink>
-        ))}
-      </nav>
-      <Outlet />
+    <div className="flex flex-col gap-6 pt-2 md:flex-row">
+      <aside className="shrink-0 md:w-52">
+        <h1 className="mb-4 px-3 text-lg font-bold">Administración</h1>
+        <nav className="flex gap-1 overflow-x-auto md:flex-col">
+          {LINKS.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              className={({ isActive }) =>
+                `whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  isActive ? 'bg-main/10 text-main' : 'text-muted hover:bg-main/5 hover:text-main'
+                }`
+              }
+            >
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+      <div className="min-w-0 flex-1">
+        <Outlet />
+      </div>
     </div>
   );
 }

@@ -18,6 +18,10 @@ import { AdminImportPage } from './pages/AdminImportPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminCatalogPage } from './pages/admin/AdminCatalogPage';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { AdminModerationPage } from './pages/admin/AdminModerationPage';
+import { AdminBackstagePage } from './pages/admin/AdminBackstagePage';
+import { AdminPagesPage } from './pages/admin/AdminPagesPage';
 import { AccountPage } from './pages/AccountPage';
 import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
@@ -76,6 +80,10 @@ export const router = createBrowserRouter([
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'catalog', element: <AdminCatalogPage /> },
           { path: 'import', element: <AdminImportPage /> },
+          { path: 'settings', element: <AdminSettingsPage /> },
+          { path: 'moderation', element: <AdminModerationPage /> },
+          { path: 'backstage', element: <AdminBackstagePage /> },
+          { path: 'pages', element: <AdminPagesPage /> },
         ],
       },
     ],
