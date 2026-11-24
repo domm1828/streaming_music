@@ -1,11 +1,13 @@
 import { Link, Outlet } from 'react-router';
 import { useAuth } from '../auth/use-auth';
+import { useRadioAutoExtend } from '../discovery/use-radio-autoextend';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 
 export function WebPlayerLayout() {
   const { isAuthenticated, user, hasPermission } = useAuth();
+  useRadioAutoExtend();
 
   return (
     <div className="min-h-full pb-24">
@@ -20,6 +22,9 @@ export function WebPlayerLayout() {
           </Link>
           <Link to="/search" className="text-sm opacity-80 hover:opacity-100">
             Buscar
+          </Link>
+          <Link to="/radio" className="text-sm opacity-80 hover:opacity-100">
+            Radio
           </Link>
           {isAuthenticated && (
             <Link to="/library" className="text-sm opacity-80 hover:opacity-100">

@@ -36,7 +36,7 @@ export function ArtistPage() {
             <FollowButton type="artist" id={id} />
             <LikeButton type="artist" id={id} label />
             <Link
-              to={`/radio?seedType=artist&seedId=${id}`}
+              to={`/radio?seedType=artist&seedId=${id}&label=${encodeURIComponent(artist.data.name)}`}
               className="rounded-lg border border-brand-secondary/30 px-3 py-2 text-sm font-medium hover:border-brand-secondary/60"
             >
               📻 Radio
