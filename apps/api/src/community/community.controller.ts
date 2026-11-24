@@ -89,6 +89,6 @@ export class CommunityController {
   @RequirePermissions(PERMISSIONS.CONTENT_MANAGE)
   @HttpCode(HttpStatus.OK)
   resolve(@Param('id') id: string, @Body() dto: ResolveReportDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.reports.resolve(id, user.id, dto.status, dto.resolution);
+    return this.reports.resolve(id, user.id, dto.status, dto.resolution, dto.action);
   }
 }

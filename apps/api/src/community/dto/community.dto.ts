@@ -60,4 +60,9 @@ export class ResolveReportDto {
   @IsOptional()
   @MaxLength(500)
   resolution?: string;
+
+  /** Acción opcional sobre el contenido: `hide` oculta el comentario reportado. */
+  @IsIn(['hide', 'none'])
+  @IsOptional()
+  action?: 'hide' | 'none';
 }
