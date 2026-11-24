@@ -139,15 +139,25 @@ export class BackstageService {
     return req;
   }
 
-  /** Control de acceso a un adjunto: solo el dueño o un admin. */
-  async getAttachmentPath(requestId: string, index: number, user: { id: string; isAdmin: boolean }) {
+  /**
+   * URLs firmadas temporales de los adjuntos de una solicitud.
+   * Control de acceso: solo el dueño o un admin.
+   */
+  async attachmentUrls(
+    requestId: string,
+    user: { id: string; isAdmin: boolean },
+  ): Promise<{ filename: string; mime: string | null; url: string }[]> {
     const req = await this.getOrFail(requestId);
     if (String(req.user) !== user.id && !user.isAdmin) {
-      throw new ForbiddenException('No podés acceder a este adjunto');
+      throw new ForbiddenException('No podés acceder a estos adjuntos');
     }
-    const att = req.attachments[index];
-    if (!att) throw new NotFoundException('Adjunto no encontrado');
-    return this.storage.rootDir + att.path.replace(/^\/uploads/, '');
+    return Promise.all(
+      req.attachments.map(async (att) => ({
+        filename: att.filename,
+        mime: att.mime,
+        url: await this.storage.signedUrl(att.path),
+      })),
+    );
   }
 
   private async uniqueArtistSlug(name: string): Promise<string> {

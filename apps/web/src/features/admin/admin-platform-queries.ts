@@ -144,6 +144,12 @@ export function useHideComment() {
 }
 
 // --- Backstage ---
+export interface BackstageAttachmentRef {
+  filename: string;
+  path: string;
+  mime: string | null;
+}
+
 export interface AdminBackstage {
   _id: string;
   type: 'claim' | 'new';
@@ -151,14 +157,31 @@ export interface AdminBackstage {
   message: string | null;
   status: 'pending' | 'approved' | 'rejected';
   reviewNote: string | null;
+  attachments?: BackstageAttachmentRef[];
   createdAt: string;
   user?: { name: string; username: string } | null;
+}
+
+export interface SignedAttachment {
+  filename: string;
+  mime: string | null;
+  url: string;
 }
 
 export function useAdminBackstage(status: string, page: number) {
   return useQuery<Paginated<AdminBackstage>>({
     queryKey: ['admin-backstage', status, page],
     queryFn: () => getList<AdminBackstage>('admin/backstage', { status: status || undefined, page, perPage: 20 }),
+  });
+}
+
+/** URLs firmadas de los adjuntos de una solicitud; se carga bajo demanda. */
+export function useBackstageAttachments(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['admin-backstage-attachments', id],
+    queryFn: () => getOne<SignedAttachment[]>(`admin/backstage/${id}/attachments`),
+    enabled,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
