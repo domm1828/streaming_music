@@ -4,6 +4,19 @@ import { apiClient } from '../../lib/api-client';
 import { getList, getOne, mutate } from '../../lib/http';
 import type { Album, Artist, Genre, Paginated, Track } from '../catalog/types';
 
+export type ChannelSourceType =
+  | 'topTracks'
+  | 'newAlbums'
+  | 'topArtists'
+  | 'genreTracks'
+  | 'publicPlaylists'
+  | 'manual';
+export type ChannelLayout = 'grid' | 'carousel' | 'list';
+export interface ChannelContentItem {
+  refType: 'track' | 'album' | 'artist' | 'playlist';
+  refId: string;
+  order: number;
+}
 export interface AdminChannel {
   _id: string;
   slug: string;
@@ -12,7 +25,24 @@ export interface AdminChannel {
   position: number;
   public: boolean;
   internal: boolean;
-  config: { sourceType: string; layout: string };
+  config: { sourceType: ChannelSourceType; layout: ChannelLayout; params?: { limit?: number; genre?: string } };
+  content?: ChannelContentItem[];
+}
+export interface ChannelInput {
+  name: string;
+  slug?: string;
+  type?: string;
+  position?: number;
+  public?: boolean;
+  internal?: boolean;
+  config: { sourceType: ChannelSourceType; layout?: ChannelLayout; params?: Record<string, unknown> };
+  content?: ChannelContentItem[];
+}
+export interface ResolvedChannelItem {
+  _id: string;
+  name: string;
+  image?: string | null;
+  _itemType?: string;
 }
 
 // --- Artistas ---
@@ -311,6 +341,27 @@ export function useDeleteGenre() {
 // --- Channels ---
 export function useAdminChannels() {
   return useQuery({ queryKey: ['admin-channels'], queryFn: () => getOne<AdminChannel[]>('channels/admin') });
+}
+export function useChannelResolved(slug: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['channel-resolved', slug],
+    queryFn: () => getOne<{ items: ResolvedChannelItem[] }>(`channels/slug/${slug}`),
+    enabled: Boolean(slug) && enabled,
+  });
+}
+export function useCreateChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChannelInput) => mutate<AdminChannel>('post', 'channels', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-channels'] }),
+  });
+}
+export function useUpdateChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: ChannelInput & { id: string }) => mutate<AdminChannel>('patch', `channels/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-channels'] }),
+  });
 }
 export function useRefreshChannels() {
   const qc = useQueryClient();

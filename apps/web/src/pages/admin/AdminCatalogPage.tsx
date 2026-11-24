@@ -5,6 +5,7 @@ import { Column, DataTable } from '../../features/admin/DataTable';
 import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
 import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
+import { ChannelEditorDialog } from '../../features/admin/ChannelEditorDialog';
 import { Tabs } from '../../components/Tabs';
 import {
   useAdminAlbums,
@@ -382,24 +383,49 @@ function ChannelsTab() {
   const { data, isLoading } = useAdminChannels();
   const refresh = useRefreshChannels();
   const del = useDeleteChannel();
+  const [editing, setEditing] = useState<AdminChannel | null | undefined>(undefined);
   const columns: Column<AdminChannel>[] = [
     { key: 'name', header: 'Nombre', render: (c) => <span className="font-medium">{c.name}</span> },
     { key: 'type', header: 'Página' },
     { key: 'sourceType', header: 'Fuente', render: (c) => c.config.sourceType },
+    { key: 'layout', header: 'Layout', render: (c) => c.config.layout },
     { key: 'position', header: 'Orden' },
     { key: 'public', header: 'Público', render: (c) => (c.public ? '✓' : '—') },
   ];
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => refresh.mutate()}
-        disabled={refresh.isPending}
-        className="rounded-full border border-divider px-4 py-2 text-sm font-medium text-muted hover:border-brand-secondary hover:text-main disabled:opacity-60"
-      >
-        {refresh.isPending ? 'Refrescando…' : 'Refrescar contenido'}
-      </button>
-      <DataTable columns={columns} rows={data ?? []} rowKey={(c) => c._id} loading={isLoading} actions={(c) => <DelButton onClick={() => del.mutate(c._id)} />} />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setEditing(null)}
+          className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light"
+        >
+          Nuevo channel
+        </button>
+        <button
+          type="button"
+          onClick={() => refresh.mutate()}
+          disabled={refresh.isPending}
+          className="rounded-full border border-divider px-4 py-2 text-sm font-medium text-muted hover:border-brand-secondary hover:text-main disabled:opacity-60"
+        >
+          {refresh.isPending ? 'Refrescando…' : 'Refrescar contenido'}
+        </button>
+      </div>
+      <DataTable
+        columns={columns}
+        rows={data ?? []}
+        rowKey={(c) => c._id}
+        loading={isLoading}
+        actions={(c) => (
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setEditing(c)} className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary">
+              Editar
+            </button>
+            <DelButton onClick={() => del.mutate(c._id)} />
+          </div>
+        )}
+      />
+      {editing !== undefined && <ChannelEditorDialog channel={editing} onClose={() => setEditing(undefined)} />}
     </div>
   );
 }
