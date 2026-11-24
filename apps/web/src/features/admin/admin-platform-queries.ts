@@ -90,6 +90,14 @@ export function useDeleteFile() {
 }
 
 // --- Reportes / moderación ---
+export interface ReportPreview {
+  exists: boolean;
+  label: string;
+  sublabel?: string;
+  link?: string;
+  hidden?: boolean;
+}
+
 export interface AdminReport {
   _id: string;
   reporter: { name: string; username: string } | null;
@@ -98,6 +106,7 @@ export interface AdminReport {
   reason: string;
   status: 'open' | 'resolved' | 'dismissed';
   resolution: string | null;
+  preview?: ReportPreview;
   createdAt: string;
 }
 
@@ -111,14 +120,27 @@ export function useAdminReports(status: string, page: number) {
 export function useResolveReport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, resolution }: { id: string; status: 'resolved' | 'dismissed'; resolution?: string }) =>
-      mutate('post', `admin/reports/${id}/resolve`, { status, resolution }),
+    mutationFn: ({
+      id,
+      status,
+      resolution,
+      action,
+    }: {
+      id: string;
+      status: 'resolved' | 'dismissed';
+      resolution?: string;
+      action?: 'hide' | 'none';
+    }) => mutate('post', `admin/reports/${id}/resolve`, { status, resolution, action }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-reports'] }),
   });
 }
 
 export function useHideComment() {
-  return useMutation({ mutationFn: (id: string) => mutate('post', `comments/${id}/hide`) });
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mutate('post', `comments/${id}/hide`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-reports'] }),
+  });
 }
 
 // --- Backstage ---

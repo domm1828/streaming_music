@@ -23,6 +23,7 @@ import { BackstageModule } from '../backstage/backstage.module';
 import { BackstageService } from '../backstage/backstage.service';
 import { CommunityModule } from './community.module';
 import { CommentsService } from './comments.service';
+import { ReportsService } from './reports.service';
 
 /** Gateway de tiempo real mockeado: registra las emisiones sin abrir un socket. */
 class FakeGateway {
@@ -39,6 +40,7 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
   let settings: SettingsService;
   let notifications: NotificationsService;
   let comments: CommentsService;
+  let reports: ReportsService;
   let backstage: BackstageService;
   let users: UsersService;
   let userModel: Model<User>;
@@ -78,6 +80,7 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
     settings = moduleRef.get(SettingsService);
     notifications = moduleRef.get(NotificationsService);
     comments = moduleRef.get(CommentsService);
+    reports = moduleRef.get(ReportsService);
     backstage = moduleRef.get(BackstageService);
     users = moduleRef.get(UsersService);
     userModel = moduleRef.get<Model<User>>(getModelToken(User.name));
@@ -181,6 +184,40 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       await settings.set('commentsEnabled', true);
       const ok = await comments.create(userId, 'artist', artId, 'permitido');
       expect(ok._id).toBeTruthy();
+    });
+  });
+
+  describe('Reportes y moderación', () => {
+    it('resuelve un reporte de comentario ocultando el contenido y lo previsualiza', async () => {
+      const artId = String((await artistModel.create({ name: 'TR', slug: 'tr-' + Date.now() }))._id);
+      const comment = await comments.create(userId, 'artist', artId, 'comentario reportado');
+      const report = await reports.create(adminId, 'comment', String(comment._id), 'spam');
+
+      // El listado trae un preview legible del contenido reportado.
+      const open = await reports.list('open', 1, 50);
+      const row = open.data.find((r) => String(r._id) === String(report._id));
+      expect(row?.preview?.exists).toBe(true);
+      expect(row?.preview?.label).toContain('comentario reportado');
+      expect(row?.preview?.hidden).toBe(false);
+
+      // Resolver con action=hide oculta el comentario y marca resuelto.
+      const resolved = await reports.resolve(String(report._id), adminId, 'resolved', 'spam confirmado', 'hide');
+      expect(resolved.status).toBe('resolved');
+      expect(resolved.resolution).toBe('spam confirmado');
+
+      const visible = await comments.listForContent('artist', artId, 1, 20);
+      expect(visible.data.some((c) => String(c._id) === String(comment._id))).toBe(false);
+
+      // Y el preview ahora lo marca como oculto.
+      const after = await reports.list('resolved', 1, 50);
+      const afterRow = after.data.find((r) => String(r._id) === String(report._id));
+      expect(afterRow?.preview?.hidden).toBe(true);
+    });
+
+    it('resuelve aunque el contenido reportado ya no exista', async () => {
+      const report = await reports.create(adminId, 'comment', String(adminId), 'inexistente');
+      const resolved = await reports.resolve(String(report._id), adminId, 'dismissed', undefined, 'hide');
+      expect(resolved.status).toBe('dismissed');
     });
   });
 
