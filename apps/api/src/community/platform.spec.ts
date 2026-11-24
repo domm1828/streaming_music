@@ -128,6 +128,32 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       const after = await notifications.list(userId, 1, 20);
       expect(after.data.find((n) => String(n._id) === String(first._id))?.readAt).toBeTruthy();
     });
+
+    it('broadcast: cuenta la audiencia y entrega a cada usuario activo', async () => {
+      const all = await notifications.countAudience({ kind: 'all' });
+      expect(all).toBeGreaterThanOrEqual(2); // user + admin
+
+      const res = await notifications.broadcast({
+        title: 'Aviso general',
+        body: 'Para todos',
+        audience: { kind: 'all' },
+      });
+      expect(res.sent).toBe(all);
+
+      // cada usuario recibió su propia notificación de broadcast
+      const mine = await notifications.list(userId, 1, 50);
+      expect(mine.data.some((n) => n.type === 'admin.broadcast' && n.title === 'Aviso general')).toBe(true);
+    });
+
+    it('broadcast: audiencia por usuarios puntuales solo alcanza a los elegidos', async () => {
+      const res = await notifications.broadcast({
+        title: 'Solo a uno',
+        audience: { kind: 'users', userIds: [userId] },
+      });
+      expect(res.sent).toBe(1);
+      const adminList = await notifications.list(adminId, 1, 50);
+      expect(adminList.data.some((n) => n.title === 'Solo a uno')).toBe(false);
+    });
   });
 
   describe('Comentarios y votos', () => {

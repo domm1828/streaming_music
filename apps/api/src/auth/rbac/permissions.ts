@@ -11,6 +11,7 @@ export const PERMISSIONS = {
   USERS_IMPERSONATE: 'users.impersonate',
   CATALOG_MANAGE: 'catalog.manage',
   CONTENT_MANAGE: 'content.manage',
+  NOTIFICATIONS_SEND: 'notifications.send',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -25,6 +26,7 @@ export const PERMISSION_CATALOG: { group: string; value: Permission; label: stri
   { group: 'Usuarios', value: PERMISSIONS.USERS_IMPERSONATE, label: 'Suplantar usuarios' },
   { group: 'Catálogo', value: PERMISSIONS.CATALOG_MANAGE, label: 'Gestionar catálogo (artistas/álbumes/pistas/géneros)' },
   { group: 'Contenido', value: PERMISSIONS.CONTENT_MANAGE, label: 'Gestionar contenido (channels, moderación, CMS)' },
+  { group: 'Contenido', value: PERMISSIONS.NOTIFICATIONS_SEND, label: 'Enviar notificaciones a usuarios' },
 ];
 
 /** Roles por defecto que se siembran al iniciar. */

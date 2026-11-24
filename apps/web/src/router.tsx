@@ -18,6 +18,7 @@ import { AdminImportPage } from './pages/AdminImportPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { AdminRolesPage } from './pages/admin/AdminRolesPage';
+import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 import { AdminCatalogPage } from './pages/admin/AdminCatalogPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminModerationPage } from './pages/admin/AdminModerationPage';
@@ -104,6 +105,7 @@ export const router = createBrowserRouter([
           { path: 'menus', element: <AdminMenusPage /> },
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'roles', element: <AdminRolesPage /> },
+          { path: 'notifications', element: <AdminNotificationsPage /> },
           { path: 'catalog', element: <AdminCatalogPage /> },
           { path: 'import', element: <AdminImportPage /> },
           { path: 'settings', element: <AdminSettingsPage /> },
