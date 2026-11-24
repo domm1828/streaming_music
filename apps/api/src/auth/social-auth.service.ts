@@ -11,6 +11,8 @@ import { SocialProfile, SocialProfileDocument, SocialProvider } from './schemas/
 export interface SocialProfileData {
   providerId: string;
   email: string;
+  /** El proveedor confirmó la titularidad del email. */
+  emailVerified: boolean;
   name: string;
   image?: string | null;
 }
@@ -44,12 +46,18 @@ export class SocialAuthService {
     profile: SocialProfileData,
     meta: SessionMeta,
   ): Promise<AuthResult> {
-    // 1) Vínculo existente.
+    // 1) Vínculo existente: ya es una identidad confiada, se reusa directamente.
     const existing = await this.model.findOne({ provider, providerId: profile.providerId }).lean().exec();
     if (existing) {
       const user = await this.users.findById(String(existing.user));
       if (!user) throw new UnauthorizedException('Cuenta no encontrada');
       return this.buildResult(String(user._id), user.email, meta);
+    }
+
+    // Para enlazar o crear por email, el proveedor DEBE haber verificado el email.
+    // De lo contrario un atacante podría reclamar el email de otra cuenta (account takeover).
+    if (!profile.emailVerified) {
+      throw new UnauthorizedException('El proveedor no verificó la titularidad del email');
     }
 
     // 2) Enlazar a una cuenta existente por email, o crear una nueva.
