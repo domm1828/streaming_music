@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -12,7 +12,8 @@ export class AnalyticsController {
   constructor(private readonly service: AnalyticsService) {}
 
   @Get()
-  overview() {
-    return this.service.overview();
+  overview(@Query('days') days?: string) {
+    const parsed = days !== undefined ? Number(days) : undefined;
+    return this.service.overview(Number.isFinite(parsed) ? parsed : undefined);
   }
 }

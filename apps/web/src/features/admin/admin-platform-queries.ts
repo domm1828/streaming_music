@@ -28,16 +28,40 @@ export function useSaveSettings() {
 }
 
 // --- Analytics ---
-export interface AnalyticsOverview {
-  totals: { users: number; artists: number; albums: number; tracks: number; plays: number };
-  newUsers: number;
-  topTracks: { id: string; name: string; plays: number }[];
-  playsByDay: { day: string; plays: number }[];
-  topCountries: { country: string; plays: number }[];
+export interface TopEntity {
+  id: string;
+  name: string;
+  plays: number;
 }
 
-export function useAdminAnalytics() {
-  return useQuery({ queryKey: ['admin-analytics'], queryFn: () => getOne<AnalyticsOverview>('admin/analytics') });
+export interface TopUser extends TopEntity {
+  username: string;
+}
+
+export interface NamedCount {
+  label: string;
+  plays: number;
+}
+
+export interface AnalyticsOverview {
+  days: number;
+  totals: { users: number; artists: number; albums: number; tracks: number; plays: number };
+  newUsers: number;
+  playsByDay: { day: string; plays: number }[];
+  topTracks: TopEntity[];
+  topArtists: TopEntity[];
+  topAlbums: TopEntity[];
+  topUsers: TopUser[];
+  topCountries: { country: string; plays: number }[];
+  devices: NamedCount[];
+  platforms: NamedCount[];
+}
+
+export function useAdminAnalytics(days: number) {
+  return useQuery({
+    queryKey: ['admin-analytics', days],
+    queryFn: () => getOne<AnalyticsOverview>('admin/analytics', { days }),
+  });
 }
 
 export interface MenuItem {
