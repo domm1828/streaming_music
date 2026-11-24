@@ -4,20 +4,26 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import type { ApiErrorResponse, ValidationErrors } from '@stream-music/shared';
 import { captureException } from '../../observability/sentry';
+import { LogsService } from '../../logs/logs.service';
 
 /**
  * Filtro global de excepciones. Normaliza todos los errores al contrato
  * { status: 'error', statusCode, message, errors? }.
  * Los errores de validación (422) incluyen `errors` por campo.
  */
+@Injectable()
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  constructor(@Optional() private readonly logs?: LogsService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -56,6 +62,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (statusCode >= 500) {
       this.logger.error(`${request.method} ${request.url} -> ${statusCode}: ${message}`);
       captureException(exception); // Reporta a Sentry si está configurado.
+      void this.logs?.record('error', `${request.method} ${request.url} -> ${statusCode}: ${message}`, {
+        context: 'http',
+        method: request.method,
+        url: request.url,
+        statusCode,
+      });
     }
 
     response.status(statusCode).json(payload);

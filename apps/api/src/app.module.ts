@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -20,6 +20,8 @@ import { DiscoveryModule } from './discovery/discovery.module';
 import { ExportsModule } from './exports/exports.module';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { LogsModule } from './logs/logs.module';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LocalizationModule } from './localization/localization.module';
 import { MailModule } from './mail/mail.module';
 import { MetadataModule } from './metadata/metadata.module';
@@ -74,7 +76,11 @@ import { UsersModule } from './users/users.module';
     BootstrapModule,
     HealthModule,
     AnalyticsModule,
+    LogsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}

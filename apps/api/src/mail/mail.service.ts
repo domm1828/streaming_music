@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
 import type { MailConfig } from '../config/configuration';
+import { LogsService } from '../logs/logs.service';
 
 @Injectable()
 export class MailService {
@@ -9,7 +10,10 @@ export class MailService {
   private readonly transporter: Transporter;
   private readonly from: string;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly logs?: LogsService,
+  ) {
     const mail = this.config.get<MailConfig>('mail')!;
     this.from = mail.from;
     this.transporter = createTransport({
@@ -43,9 +47,12 @@ export class MailService {
   private async send(to: string, subject: string, text: string): Promise<void> {
     try {
       await this.transporter.sendMail({ from: this.from, to, subject, text });
+      void this.logs?.record('email', `Enviado a ${to}: ${subject}`, { context: 'mail', to, ok: true });
     } catch (err) {
       // No romper el flujo de auth si el correo falla; se registra para diagnóstico.
-      this.logger.error(`No se pudo enviar el correo a ${to}: ${(err as Error).message}`);
+      const msg = (err as Error).message;
+      this.logger.error(`No se pudo enviar el correo a ${to}: ${msg}`);
+      void this.logs?.record('email', `Falló el envío a ${to}: ${subject}`, { context: 'mail', to, ok: false, error: msg });
     }
   }
 }

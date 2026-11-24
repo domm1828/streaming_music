@@ -10,6 +10,8 @@ const LINKS = [
   { to: '/admin/moderation', label: 'Moderación' },
   { to: '/admin/backstage', label: 'Backstage' },
   { to: '/admin/pages', label: 'Páginas' },
+  { to: '/admin/files', label: 'Archivos' },
+  { to: '/admin/logs', label: 'Logs' },
 ];
 
 export function AdminLayout() {
