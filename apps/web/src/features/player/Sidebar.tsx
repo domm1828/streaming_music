@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router';
 import { Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
 import { useCreatePlaylist, useMyPlaylists } from '../playlists/playlist-queries';
+import { useT } from '../../lib/i18n';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
@@ -14,6 +15,7 @@ export function Sidebar() {
   const navigate = useNavigate();
   const myPlaylists = useMyPlaylists();
   const createPlaylist = useCreatePlaylist();
+  const t = useT();
 
   const onCreate = () => {
     createPlaylist.mutate(
@@ -31,25 +33,25 @@ export function Sidebar() {
         </Link>
         <nav className="space-y-1">
           <NavLink to="/" end className={navClass}>
-            <Home size={18} /> Inicio
+            <Home size={18} /> {t('nav.home', 'Inicio')}
           </NavLink>
           <NavLink to="/search" className={navClass}>
-            <Search size={18} /> Buscar
+            <Search size={18} /> {t('nav.search', 'Buscar')}
           </NavLink>
           <NavLink to="/browse" className={navClass}>
-            <Compass size={18} /> Explorar
+            <Compass size={18} /> {t('nav.browse', 'Explorar')}
           </NavLink>
           <NavLink to="/radio" className={navClass}>
-            <Radio size={18} /> Radio
+            <Radio size={18} /> {t('nav.radio', 'Radio')}
           </NavLink>
           {isAuthenticated && (
             <NavLink to="/library" className={navClass}>
-              <Library size={18} /> Tu biblioteca
+              <Library size={18} /> {t('nav.library', 'Tu biblioteca')}
             </NavLink>
           )}
           {hasPermission('content.manage') && (
             <NavLink to="/admin" className={navClass}>
-              <Shield size={18} /> Admin
+              <Shield size={18} /> {t('nav.admin', 'Admin')}
             </NavLink>
           )}
         </nav>
@@ -58,13 +60,13 @@ export function Sidebar() {
       {isAuthenticated && (
         <div className="flex min-h-0 flex-1 flex-col rounded-panel bg-elevated p-3">
           <div className="mb-2 flex items-center justify-between px-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Playlists</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">{t('sidebar.playlists', 'Playlists')}</span>
             <button
               type="button"
               onClick={onCreate}
               disabled={createPlaylist.isPending}
               className="rounded-md p-1 text-muted hover:bg-main/10 hover:text-main"
-              aria-label="Crear playlist"
+              aria-label={t('sidebar.createPlaylist', 'Crear playlist')}
             >
               <Plus size={16} />
             </button>

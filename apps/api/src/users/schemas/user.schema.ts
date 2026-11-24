@@ -52,6 +52,10 @@ export class User {
   @Prop({ default: 'es' })
   language!: string;
 
+  /** Preferencia: recibir notificaciones por email. */
+  @Prop({ default: true })
+  emailNotifications!: boolean;
+
   @Prop({ default: 'user' })
   type!: string;
 

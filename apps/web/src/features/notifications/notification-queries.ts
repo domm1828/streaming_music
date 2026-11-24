@@ -47,3 +47,25 @@ export function useMarkAllRead() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 }
+
+export interface NotificationPreferences {
+  emailNotifications: boolean;
+}
+
+export function useNotificationPreferences() {
+  const { isAuthenticated } = useAuth();
+  return useQuery({
+    queryKey: ['notifications', 'preferences'],
+    queryFn: () => getOne<NotificationPreferences>('me/notifications/preferences'),
+    enabled: isAuthenticated,
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: NotificationPreferences) =>
+      mutate<NotificationPreferences>('put', 'me/notifications/preferences', prefs),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'preferences'] }),
+  });
+}

@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { LogOut, Monitor } from 'lucide-react';
+import { KeyRound, LogOut, Monitor } from 'lucide-react';
 import {
+  useApiTokens,
   useChangePassword,
+  useCreateApiToken,
   useDeleteAccount,
   useLogout,
+  useRevokeApiToken,
   useRevokeOtherSessions,
   useRevokeSession,
   useSessions,
 } from '../features/auth/auth-queries';
+import { useNotificationPreferences, useUpdateNotificationPreferences } from '../features/notifications/notification-queries';
+import { LanguageSelector } from '../features/i18n/LanguageSelector';
 import { useAuth } from '../features/auth/use-auth';
 import { TwoFactorSettings } from '../features/auth/TwoFactorSettings';
 
@@ -171,6 +176,84 @@ function DangerZone() {
   );
 }
 
+function ApiTokens() {
+  const tokens = useApiTokens();
+  const create = useCreateApiToken();
+  const revoke = useRevokeApiToken();
+  const [name, setName] = useState('');
+  const [fresh, setFresh] = useState<string | null>(null);
+
+  const onCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    create.mutate(name.trim(), {
+      onSuccess: (t) => {
+        setFresh(t.token);
+        setName('');
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      {fresh && (
+        <div className="rounded-lg bg-surface p-3 text-sm">
+          <p className="text-muted">Copiá este token ahora — no se vuelve a mostrar:</p>
+          <code className="mt-1 block break-all font-mono text-brand-secondary">{fresh}</code>
+        </div>
+      )}
+      <form onSubmit={onCreate} className="flex max-w-md gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (p. ej. CLI, script)" className={`${inputClass} flex-1`} />
+        <button
+          type="submit"
+          disabled={create.isPending || !name.trim()}
+          className="shrink-0 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light disabled:opacity-60"
+        >
+          Crear
+        </button>
+      </form>
+      <ul className="space-y-2">
+        {tokens.data?.map((t) => (
+          <li key={t.id} className="flex items-center gap-3 rounded-lg bg-surface px-3 py-2 text-sm">
+            <KeyRound size={18} className="shrink-0 text-muted" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate">{t.name}</p>
+              <p className="text-xs text-muted">
+                {t.lastUsedAt ? `último uso ${new Date(t.lastUsedAt).toLocaleDateString()}` : 'sin usar'} · creado{' '}
+                {new Date(t.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <button
+              onClick={() => revoke.mutate(t.id)}
+              className="rounded-full border border-divider px-3 py-1 text-xs font-medium text-muted hover:border-red-500 hover:text-red-500"
+            >
+              Revocar
+            </button>
+          </li>
+        ))}
+        {tokens.data && tokens.data.length === 0 && <li className="text-sm text-muted">No tenés tokens de API.</li>}
+      </ul>
+    </div>
+  );
+}
+
+function NotificationPrefs() {
+  const prefs = useNotificationPreferences();
+  const update = useUpdateNotificationPreferences();
+  const enabled = prefs.data?.emailNotifications ?? true;
+  return (
+    <label className="flex items-center gap-3 text-sm">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(e) => update.mutate({ emailNotifications: e.target.checked })}
+        disabled={prefs.isLoading || update.isPending}
+      />
+      Recibir notificaciones por email
+    </label>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 border-b border-divider py-1.5 last:border-0">
@@ -221,12 +304,24 @@ export function AccountPage() {
         </Section>
       )}
 
+      <Section title="Idioma" description="Idioma de la interfaz.">
+        <LanguageSelector />
+      </Section>
+
       <Section title="Cambiar contraseña">
         <ChangePassword />
       </Section>
 
       <Section title="Sesiones activas" description="Dispositivos donde iniciaste sesión.">
         <Sessions />
+      </Section>
+
+      <Section title="Tokens de API" description="Para acceder a la API fuera del navegador (Authorization: Bearer).">
+        <ApiTokens />
+      </Section>
+
+      <Section title="Notificaciones">
+        <NotificationPrefs />
       </Section>
 
       <div className={cardClass}>
