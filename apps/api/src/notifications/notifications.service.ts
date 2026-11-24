@@ -16,6 +16,20 @@ export interface CreateNotificationInput {
   email?: boolean;
 }
 
+export type BroadcastAudience =
+  | { kind: 'all' }
+  | { kind: 'verified' }
+  | { kind: 'role'; roleId: string }
+  | { kind: 'users'; userIds: string[] };
+
+export interface BroadcastInput {
+  title: string;
+  body?: string | null;
+  link?: string | null;
+  email?: boolean;
+  audience: BroadcastAudience;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -52,6 +66,44 @@ export class NotificationsService {
       }
     }
     return notification;
+  }
+
+  /** Resuelve la audiencia a una lista de ids de usuarios activos (no baneados). */
+  private async resolveAudience(audience: BroadcastAudience): Promise<string[]> {
+    const base: Record<string, unknown> = { bannedAt: null };
+    if (audience.kind === 'verified') base.emailVerifiedAt = { $ne: null };
+    else if (audience.kind === 'role') {
+      if (!Types.ObjectId.isValid(audience.roleId)) return [];
+      base.roles = new Types.ObjectId(audience.roleId);
+    } else if (audience.kind === 'users') {
+      const ids = audience.userIds.filter((id) => Types.ObjectId.isValid(id));
+      if (ids.length === 0) return [];
+      base._id = { $in: ids.map((id) => new Types.ObjectId(id)) };
+    }
+    const users = await this.userModel.find(base).select('_id').lean().exec();
+    return users.map((u) => String(u._id));
+  }
+
+  /** Cuenta cuántos usuarios recibirían un broadcast con la audiencia dada. */
+  async countAudience(audience: BroadcastAudience): Promise<number> {
+    return (await this.resolveAudience(audience)).length;
+  }
+
+  /** Crea una notificación para cada usuario de la audiencia (tiempo real + email opcional). */
+  async broadcast(input: BroadcastInput): Promise<{ sent: number }> {
+    const userIds = await this.resolveAudience(input.audience);
+    const data = input.link ? { link: input.link } : null;
+    for (const userId of userIds) {
+      await this.create({
+        userId,
+        type: 'admin.broadcast',
+        title: input.title,
+        body: input.body ?? null,
+        data,
+        email: input.email,
+      });
+    }
+    return { sent: userIds.length };
   }
 
   async list(userId: string, page: number, perPage: number) {
