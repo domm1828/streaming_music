@@ -110,6 +110,30 @@ export class AuthService {
     await this.tokens.revokeAllForUser(String(user._id)); // cierra todas las sesiones
   }
 
+  /** Cambia la contraseña de un usuario autenticado (verifica la actual). */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user || !user.passwordHash) {
+      throw new BadRequestException('Esta cuenta no tiene una contraseña configurada');
+    }
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) throw new BadRequestException('La contraseña actual no es correcta');
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.usersService.setPassword(userId, passwordHash);
+  }
+
+  /** Borra la cuenta del usuario (verifica contraseña si la tiene) y cierra sus sesiones. */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+    if (user.passwordHash) {
+      const ok = await bcrypt.compare(password, user.passwordHash);
+      if (!ok) throw new UnauthorizedException('Contraseña incorrecta');
+    }
+    await this.tokens.revokeAllForUser(userId);
+    await this.usersService.remove(userId);
+  }
+
   /** Emite tokens para otro usuario (impersonación por admin). */
   async impersonate(targetUserId: string, meta: SessionMeta): Promise<AuthResult> {
     const user = await this.usersService.getAuthenticatedUser(targetUserId);

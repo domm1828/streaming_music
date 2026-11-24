@@ -13,6 +13,7 @@ import { SearchPage } from './pages/SearchPage';
 import { RadioPage } from './pages/RadioPage';
 import { LandingPage } from './pages/LandingPage';
 import { SocialCallbackPage } from './pages/SocialCallbackPage';
+import { EmbedAlbumPage, EmbedTrackPage } from './pages/EmbedPage';
 import { AdminImportPage } from './pages/AdminImportPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -79,6 +80,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  { path: '/embed/track/:id', element: <EmbedTrackPage /> },
+  { path: '/embed/album/:id', element: <EmbedAlbumPage /> },
   { path: '/welcome', element: <LandingPage /> },
   { path: '/auth/social', element: <SocialCallbackPage /> },
   { path: '/login', element: <LoginPage /> },

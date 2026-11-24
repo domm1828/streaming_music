@@ -3,6 +3,7 @@ import { Download, Radio } from 'lucide-react';
 import { useTrack } from '../features/catalog/catalog-queries';
 import { usePlayerStore } from '../features/player/player-store';
 import { LikeButton } from '../features/social/LikeButton';
+import { ShareButton } from '../features/social/ShareButton';
 import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
 import { TrackList } from '../features/catalog/TrackList';
 import { MediaHeader, PlayButton, SectionHeader, pillClass } from '../components/media';
@@ -49,6 +50,7 @@ export function TrackPage() {
             <PlayButton onClick={() => playTrack(data)} />
             <LikeButton type="track" id={data._id} label />
             <AddToPlaylist trackId={data._id} />
+            <ShareButton path={`/track/${data._id}`} title={data.name} embedPath={`/embed/track/${data._id}`} />
             <Link
               to={`/radio?seedType=track&seedId=${data._id}&label=${encodeURIComponent(data.name)}`}
               className={pillClass()}

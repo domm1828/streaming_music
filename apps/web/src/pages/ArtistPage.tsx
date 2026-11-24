@@ -9,6 +9,7 @@ import { MediaHeader, PlayButton, pillClass } from '../components/media';
 import { usePlayerStore } from '../features/player/player-store';
 import { FollowButton } from '../features/social/FollowButton';
 import { LikeButton } from '../features/social/LikeButton';
+import { ShareButton } from '../features/social/ShareButton';
 
 type Tab = 'popular' | 'discography' | 'about';
 
@@ -46,6 +47,7 @@ export function ArtistPage() {
             />
             <FollowButton type="artist" id={id} />
             <LikeButton type="artist" id={id} label />
+            <ShareButton path={`/artist/${id}`} title={artist.data.name} />
             <Link
               to={`/radio?seedType=artist&seedId=${id}&label=${encodeURIComponent(artist.data.name)}`}
               className={pillClass()}

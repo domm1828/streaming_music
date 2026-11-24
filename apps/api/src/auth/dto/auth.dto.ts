@@ -75,3 +75,20 @@ export class ResetPasswordDto {
   @MaxLength(128)
   password!: string;
 }
+
+export class ChangePasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(8, { message: 'newPassword debe tener al menos 8 caracteres' })
+  @MaxLength(128)
+  newPassword!: string;
+}
+
+export class DeleteAccountDto {
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}

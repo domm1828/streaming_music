@@ -1,8 +1,184 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Button } from '../components/ui';
-import { useLogout } from '../features/auth/auth-queries';
+import { LogOut, Monitor } from 'lucide-react';
+import {
+  useChangePassword,
+  useDeleteAccount,
+  useLogout,
+  useRevokeOtherSessions,
+  useRevokeSession,
+  useSessions,
+} from '../features/auth/auth-queries';
 import { useAuth } from '../features/auth/use-auth';
 import { TwoFactorSettings } from '../features/auth/TwoFactorSettings';
+
+const inputClass = 'w-full rounded-lg border border-divider bg-chip px-3 py-2 outline-none focus:border-brand-secondary';
+const cardClass = 'rounded-panel bg-chip p-6';
+
+function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+  return (
+    <section className={cardClass}>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function ChangePassword() {
+  const change = useChangePassword();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setOk(false);
+    if (next !== confirm) return setError('Las contraseñas nuevas no coinciden.');
+    if (next.length < 8) return setError('La nueva contraseña debe tener al menos 8 caracteres.');
+    change.mutate(
+      { currentPassword: current, newPassword: next },
+      {
+        onSuccess: () => {
+          setOk(true);
+          setCurrent('');
+          setNext('');
+          setConfirm('');
+        },
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+          setError(msg ?? 'No se pudo cambiar la contraseña.');
+        },
+      },
+    );
+  };
+
+  return (
+    <form onSubmit={submit} className="max-w-sm space-y-3">
+      <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="Contraseña actual" autoComplete="current-password" className={inputClass} />
+      <input type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="Nueva contraseña" autoComplete="new-password" className={inputClass} />
+      <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repetir nueva contraseña" autoComplete="new-password" className={inputClass} />
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {ok && <p className="text-sm text-brand-secondary">Contraseña actualizada.</p>}
+      <button
+        type="submit"
+        disabled={change.isPending || !current || !next}
+        className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light disabled:opacity-60"
+      >
+        Cambiar contraseña
+      </button>
+    </form>
+  );
+}
+
+function Sessions() {
+  const sessions = useSessions();
+  const revoke = useRevokeSession();
+  const revokeOthers = useRevokeOtherSessions();
+
+  return (
+    <div className="space-y-3">
+      <ul className="space-y-2">
+        {sessions.data?.map((s) => (
+          <li key={s.id} className="flex items-center gap-3 rounded-lg bg-surface px-3 py-2">
+            <Monitor size={18} className="shrink-0 text-muted" />
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="truncate">{s.userAgent ?? 'Dispositivo desconocido'}</p>
+              <p className="text-xs text-muted">
+                {s.ip ?? 'IP desconocida'} · desde {new Date(s.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <button
+              onClick={() => revoke.mutate(s.id)}
+              className="rounded-full border border-divider px-3 py-1 text-xs font-medium text-muted hover:border-red-500 hover:text-red-500"
+            >
+              Cerrar
+            </button>
+          </li>
+        ))}
+        {sessions.data && sessions.data.length === 0 && <li className="text-sm text-muted">No hay sesiones activas.</li>}
+      </ul>
+      <button
+        onClick={() => revokeOthers.mutate()}
+        disabled={revokeOthers.isPending}
+        className="text-sm font-medium text-brand-secondary hover:underline disabled:opacity-60"
+      >
+        Cerrar las demás sesiones
+      </button>
+    </div>
+  );
+}
+
+function DangerZone() {
+  const del = useDeleteAccount();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    del.mutate(password, {
+      onSuccess: () => navigate('/register', { replace: true }),
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg ?? 'No se pudo eliminar la cuenta.');
+      },
+    });
+  };
+
+  return (
+    <div className="rounded-panel border border-red-500/30 p-6">
+      <h2 className="text-lg font-semibold text-red-500">Zona de peligro</h2>
+      <p className="mt-1 text-sm text-muted">Eliminar tu cuenta es permanente y cierra todas tus sesiones.</p>
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="mt-4 rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-500 hover:border-red-500"
+        >
+          Eliminar mi cuenta
+        </button>
+      ) : (
+        <form onSubmit={submit} className="mt-4 max-w-sm space-y-3">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Confirmá con tu contraseña"
+            autoComplete="current-password"
+            className={inputClass}
+          />
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={del.isPending || !password}
+              className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60"
+            >
+              Eliminar definitivamente
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} className="rounded-full border border-divider px-4 py-2 text-sm text-muted hover:text-main">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-divider py-1.5 last:border-0">
+      <dt className="text-muted">{label}</dt>
+      <dd className="font-medium">{value}</dd>
+    </div>
+  );
+}
 
 export function AccountPage() {
   const { user } = useAuth();
@@ -15,43 +191,49 @@ export function AccountPage() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="text-2xl font-bold">Tu cuenta</h1>
+    <div className="mx-auto max-w-2xl space-y-6 pt-2">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Tu cuenta</h1>
+        <button
+          onClick={onLogout}
+          disabled={logout.isPending}
+          className="inline-flex items-center gap-2 rounded-full border border-divider px-4 py-2 text-sm font-medium text-muted hover:border-brand-secondary hover:text-main"
+        >
+          <LogOut size={16} /> Cerrar sesión
+        </button>
+      </div>
+
       {user && (
-        <dl className="mt-6 space-y-2 rounded-2xl border border-brand-secondary/20 bg-brand-primary/5 p-6">
-          <Row label="Nombre" value={user.name} />
-          <Row label="Usuario" value={`@${user.username}`} />
-          <Row label="Email" value={user.email} />
-          <Row label="Email verificado" value={user.emailVerified ? 'Sí' : 'No'} />
-          <Row label="Roles" value={user.roles.join(', ') || '—'} />
-        </dl>
+        <Section title="Perfil">
+          <dl className="space-y-1">
+            <Row label="Nombre" value={user.name} />
+            <Row label="Usuario" value={`@${user.username}`} />
+            <Row label="Email" value={user.email} />
+            <Row label="Email verificado" value={user.emailVerified ? 'Sí' : 'No'} />
+            <Row label="Roles" value={user.roles.join(', ') || '—'} />
+          </dl>
+          <Link
+            to="/account/profile"
+            className="mt-4 inline-block rounded-full border border-divider px-4 py-2 text-sm font-semibold hover:border-brand-secondary"
+          >
+            Editar perfil
+          </Link>
+        </Section>
       )}
-      <div className="mt-6">
+
+      <Section title="Cambiar contraseña">
+        <ChangePassword />
+      </Section>
+
+      <Section title="Sesiones activas" description="Dispositivos donde iniciaste sesión.">
+        <Sessions />
+      </Section>
+
+      <div className={cardClass}>
         <TwoFactorSettings />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          to="/account/profile"
-          className="rounded-lg border border-brand-secondary/40 px-4 py-2.5 text-sm font-semibold hover:border-brand-secondary"
-        >
-          Editar perfil
-        </Link>
-        <div className="max-w-xs">
-          <Button type="button" onClick={onLogout} disabled={logout.isPending}>
-            Cerrar sesión
-          </Button>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-brand-secondary/10 py-1 last:border-0">
-      <dt className="opacity-60">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+      <DangerZone />
     </div>
   );
 }

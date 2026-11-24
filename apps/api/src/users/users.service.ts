@@ -48,6 +48,11 @@ export class UsersService {
     return this.userModel.findOne({ email: email.toLowerCase() }).exec();
   }
 
+  findByIdWithPassword(id: string): Promise<UserDocument | null> {
+    if (!Types.ObjectId.isValid(id)) return Promise.resolve(null);
+    return this.userModel.findById(id).select('+passwordHash').exec();
+  }
+
   findById(id: string): Promise<UserDocument | null> {
     if (!Types.ObjectId.isValid(id)) return Promise.resolve(null);
     return this.userModel.findById(id).exec();
