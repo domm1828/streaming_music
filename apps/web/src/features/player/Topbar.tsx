@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router';
 import { Search, UserRound } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { useT } from '../../lib/i18n';
 
 export function Topbar() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState('');
+  const t = useT();
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 px-2 py-2">
@@ -22,7 +24,7 @@ export function Topbar() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar artistas, canciones, álbumes…"
+          placeholder={t('topbar.searchPlaceholder', 'Buscar artistas, canciones, álbumes…')}
           className="w-full rounded-full border border-divider bg-chip py-2 pl-9 pr-4 text-sm outline-none focus:border-brand-secondary"
         />
       </form>
@@ -44,13 +46,13 @@ export function Topbar() {
         ) : (
           <>
             <Link to="/login" className="rounded-full px-4 py-2 text-sm font-medium text-muted hover:text-main">
-              Iniciar sesión
+              {t('topbar.login', 'Iniciar sesión')}
             </Link>
             <Link
               to="/register"
               className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light"
             >
-              Crear cuenta
+              {t('topbar.signup', 'Crear cuenta')}
             </Link>
           </>
         )}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiResponse, AuthResult, BootstrapData } from '@stream-music/shared';
 import { apiClient } from '../../lib/api-client';
+import { useI18nStore } from '../../lib/i18n';
 import { useAuthStore } from './auth-store';
 
 export interface SessionInfo {
@@ -128,14 +129,50 @@ export function useDeleteAccount() {
   });
 }
 
-/** Carga el estado inicial y sincroniza el usuario en el store. */
+export interface ApiTokenInfo {
+  id: string;
+  name: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export function useApiTokens() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: ['api-tokens'],
+    queryFn: async () => (await apiClient.get<ApiResponse<ApiTokenInfo[]>>('account/api-tokens')).data.data,
+    enabled: Boolean(accessToken),
+  });
+}
+
+export function useCreateApiToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) =>
+      post<{ id: string; name: string; token: string; createdAt: string }>('account/api-tokens', { name }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['api-tokens'] }),
+  });
+}
+
+export function useRevokeApiToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`account/api-tokens/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['api-tokens'] }),
+  });
+}
+
+/** Carga el estado inicial y sincroniza el usuario y las traducciones en el store. */
 export function useBootstrap() {
   const setUser = useAuthStore((s) => s.setUser);
+  const locale = useI18nStore((s) => s.locale);
+  const setI18n = useI18nStore((s) => s.setI18n);
   return useQuery({
-    queryKey: ['bootstrap'],
+    queryKey: ['bootstrap', locale],
     queryFn: async () => {
-      const { data } = await apiClient.get<ApiResponse<BootstrapData>>('bootstrap');
+      const { data } = await apiClient.get<ApiResponse<BootstrapData>>('bootstrap', { params: { locale } });
       setUser(data.data.user);
+      if (data.data.i18n) setI18n(data.data.i18n.locale, data.data.i18n.lines);
       return data.data;
     },
   });

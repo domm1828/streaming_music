@@ -10,6 +10,7 @@ import { UsersService } from '../users/users.service';
 import { AuthModule } from './auth.module';
 import { AuthService } from './auth.service';
 import { TokensService } from './tokens.service';
+import { ApiTokensService } from './api-tokens.service';
 
 function isAuthResult(r: unknown): r is { user: { id: string } } {
   return typeof r === 'object' && r !== null && 'user' in r;
@@ -20,6 +21,7 @@ describe('Cuenta: cambio de contraseña, sesiones y borrado (e2e, in-memory)', (
   let moduleRef: TestingModule;
   let auth: AuthService;
   let tokens: TokensService;
+  let apiTokens: ApiTokensService;
   let users: UsersService;
 
   beforeAll(async () => {
@@ -36,6 +38,7 @@ describe('Cuenta: cambio de contraseña, sesiones y borrado (e2e, in-memory)', (
     }).compile();
     auth = moduleRef.get(AuthService);
     tokens = moduleRef.get(TokensService);
+    apiTokens = moduleRef.get(ApiTokensService);
     users = moduleRef.get(UsersService);
   });
 
@@ -74,6 +77,24 @@ describe('Cuenta: cambio de contraseña, sesiones y borrado (e2e, in-memory)', (
     expect(left).toHaveLength(1);
     // La sesión conservada sigue siendo válida (puede rotar).
     await expect(tokens.rotate(keep, {})).resolves.toHaveProperty('refreshToken');
+  });
+
+  it('crea, resuelve y revoca tokens de API personales', async () => {
+    const id = await newUser('tok');
+    const created = await apiTokens.create(id, 'CLI');
+    expect(created.token).toMatch(/^sm_/);
+
+    expect(await apiTokens.resolveUserId(created.token)).toBe(id);
+    expect(await apiTokens.resolveUserId('sm_inexistente')).toBeNull();
+    expect(await apiTokens.resolveUserId('no-es-token')).toBeNull();
+
+    const list = await apiTokens.list(id);
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe('CLI');
+
+    await apiTokens.revoke(id, created.id);
+    expect(await apiTokens.resolveUserId(created.token)).toBeNull();
+    expect(await apiTokens.list(id)).toHaveLength(0);
   });
 
   it('borra la cuenta verificando la contraseña y revoca sus sesiones', async () => {

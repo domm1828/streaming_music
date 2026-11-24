@@ -41,8 +41,8 @@ export class NotificationsService {
 
     if (input.email) {
       try {
-        const user = await this.userModel.findById(input.userId).select('email').lean().exec();
-        if (user?.email) {
+        const user = await this.userModel.findById(input.userId).select('email emailNotifications').lean().exec();
+        if (user?.email && user.emailNotifications !== false) {
           await this.mail.sendNotification(user.email, input.title, input.body ?? input.title);
           notification.emailSent = true;
           await notification.save();
@@ -65,6 +65,16 @@ export class NotificationsService {
 
   async unreadCount(userId: string): Promise<number> {
     return this.model.countDocuments({ user: new Types.ObjectId(userId), readAt: null }).exec();
+  }
+
+  async getPreferences(userId: string): Promise<{ emailNotifications: boolean }> {
+    const user = await this.userModel.findById(userId).select('emailNotifications').lean().exec();
+    return { emailNotifications: user?.emailNotifications ?? true };
+  }
+
+  async setPreferences(userId: string, emailNotifications: boolean): Promise<{ emailNotifications: boolean }> {
+    await this.userModel.updateOne({ _id: userId }, { $set: { emailNotifications } }).exec();
+    return { emailNotifications };
   }
 
   async markRead(id: string, userId: string): Promise<void> {

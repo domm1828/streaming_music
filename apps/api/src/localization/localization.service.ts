@@ -7,11 +7,38 @@ const DEFAULT_LINES: Record<string, string> = {
   'nav.home': 'Inicio',
   'nav.browse': 'Explorar',
   'nav.search': 'Buscar',
+  'nav.radio': 'Radio',
   'nav.library': 'Tu biblioteca',
+  'nav.admin': 'Admin',
+  'sidebar.playlists': 'Playlists',
+  'sidebar.createPlaylist': 'Crear playlist',
+  'topbar.searchPlaceholder': 'Buscar artistas, canciones, álbumes…',
+  'topbar.login': 'Iniciar sesión',
+  'topbar.signup': 'Crear cuenta',
   'player.play': 'Reproducir',
   'player.pause': 'Pausar',
   'common.save': 'Guardar',
   'common.cancel': 'Cancelar',
+  'common.loading': 'Cargando…',
+};
+
+const EN_LINES: Record<string, string> = {
+  'nav.home': 'Home',
+  'nav.browse': 'Browse',
+  'nav.search': 'Search',
+  'nav.radio': 'Radio',
+  'nav.library': 'Your library',
+  'nav.admin': 'Admin',
+  'sidebar.playlists': 'Playlists',
+  'sidebar.createPlaylist': 'Create playlist',
+  'topbar.searchPlaceholder': 'Search artists, songs, albums…',
+  'topbar.login': 'Log in',
+  'topbar.signup': 'Sign up',
+  'player.play': 'Play',
+  'player.pause': 'Pause',
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.loading': 'Loading…',
 };
 
 @Injectable()
@@ -22,6 +49,10 @@ export class LocalizationService implements OnModuleInit {
     const exists = await this.model.exists({ locale: 'es' });
     if (!exists) {
       await this.model.create({ locale: 'es', name: 'Español', lines: DEFAULT_LINES, isDefault: true });
+    }
+    const hasEn = await this.model.exists({ locale: 'en' });
+    if (!hasEn) {
+      await this.model.create({ locale: 'en', name: 'English', lines: EN_LINES, isDefault: false });
     }
   }
 
