@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import type { ApiErrorResponse, ValidationErrors } from '@stream-music/shared';
+import { captureException } from '../../observability/sentry';
 
 /**
  * Filtro global de excepciones. Normaliza todos los errores al contrato
@@ -54,6 +55,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (statusCode >= 500) {
       this.logger.error(`${request.method} ${request.url} -> ${statusCode}: ${message}`);
+      captureException(exception); // Reporta a Sentry si está configurado.
     }
 
     response.status(statusCode).json(payload);

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -30,6 +30,11 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  /** Código TOTP o de recuperación, requerido si la cuenta tiene 2FA activo. */
+  @IsString()
+  @IsOptional()
+  twoFactorCode?: string;
 }
 
 export class VerifyEmailDto {

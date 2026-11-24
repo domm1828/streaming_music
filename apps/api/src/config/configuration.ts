@@ -39,6 +39,21 @@ export interface IntegrationsConfig {
   spotifyClientId: string;
   spotifyClientSecret: string;
   lastfmApiKey: string;
+  openaiApiKey: string;
+  googleClientId: string;
+  googleClientSecret: string;
+  sentryDsn: string;
+}
+
+export interface StorageConfig {
+  driver: 'local' | 's3';
+  s3Endpoint: string;
+  s3Region: string;
+  s3Bucket: string;
+  s3AccessKey: string;
+  s3SecretKey: string;
+  /** Secreto para firmar URLs de archivos privados (driver local). */
+  signingSecret: string;
 }
 
 export default (): {
@@ -48,6 +63,7 @@ export default (): {
   features: FeaturesConfig;
   search: SearchConfig;
   integrations: IntegrationsConfig;
+  storage: StorageConfig;
 } => ({
   app: {
     nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -81,5 +97,18 @@ export default (): {
     spotifyClientId: process.env.SPOTIFY_CLIENT_ID ?? '',
     spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
     lastfmApiKey: process.env.LASTFM_API_KEY ?? '',
+    openaiApiKey: process.env.OPENAI_API_KEY ?? '',
+    googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    sentryDsn: process.env.SENTRY_DSN ?? '',
+  },
+  storage: {
+    driver: (process.env.STORAGE_DRIVER as 'local' | 's3') ?? 'local',
+    s3Endpoint: process.env.S3_ENDPOINT ?? '',
+    s3Region: process.env.S3_REGION ?? 'us-east-1',
+    s3Bucket: process.env.S3_BUCKET ?? '',
+    s3AccessKey: process.env.S3_ACCESS_KEY ?? '',
+    s3SecretKey: process.env.S3_SECRET_KEY ?? '',
+    signingSecret: process.env.STORAGE_SIGNING_SECRET ?? process.env.JWT_ACCESS_SECRET ?? 'dev-signing-secret',
   },
 });

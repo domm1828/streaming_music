@@ -12,6 +12,7 @@ import { ProfileEditPage } from './pages/ProfileEditPage';
 import { SearchPage } from './pages/SearchPage';
 import { RadioPage } from './pages/RadioPage';
 import { LandingPage } from './pages/LandingPage';
+import { SocialCallbackPage } from './pages/SocialCallbackPage';
 import { AdminImportPage } from './pages/AdminImportPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '/welcome', element: <LandingPage /> },
+  { path: '/auth/social', element: <SocialCallbackPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },

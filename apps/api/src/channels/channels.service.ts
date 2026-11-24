@@ -19,6 +19,18 @@ const SOURCE_ITEM_TYPE: Record<ChannelSourceType, 'track' | 'album' | 'artist' |
   manual: 'mixed',
 };
 
+export interface ResolvedChannelView {
+  _id: unknown;
+  slug: string;
+  name: string;
+  type: string;
+  layout: string;
+  sourceType: string;
+  itemType: string;
+  items: unknown[];
+}
+type ResolvedChannelFeed = ResolvedChannelView[];
+
 const DEFAULT_CHANNELS: CreateChannelDto[] = [
   { name: 'Tendencias', slug: 'trending', type: 'home', position: 0, config: { sourceType: 'topTracks', layout: 'carousel', params: { limit: 12 } } },
   { name: 'Novedades', slug: 'new-releases', type: 'home', position: 1, config: { sourceType: 'newAlbums', layout: 'grid', params: { limit: 12 } } },
@@ -101,20 +113,37 @@ export class ChannelsService implements OnModuleInit {
       }));
     }
     await channel.save();
+    this.invalidateFeed();
     return channel;
   }
 
   async remove(id: string): Promise<void> {
     const res = await this.model.deleteOne({ _id: id }).exec();
     if (res.deletedCount === 0) throw new NotFoundException('Channel no encontrado');
+    this.invalidateFeed();
   }
 
+  // Caché en memoria del feed resuelto (alto tráfico: se pega en cada carga de home).
+  private readonly feedCache = new Map<string, { at: number; data: ResolvedChannelFeed }>();
+  private static readonly FEED_TTL_MS = 30_000;
+
   /** Lista los channels públicos de una página, ordenados, con su contenido resuelto. */
-  async listResolved(type?: string) {
+  async listResolved(type?: string): Promise<ResolvedChannelFeed> {
+    const key = type ?? '*';
+    const cached = this.feedCache.get(key);
+    if (cached && Date.now() - cached.at < ChannelsService.FEED_TTL_MS) return cached.data;
+
     const filter: Record<string, unknown> = { public: true, internal: false };
     if (type) filter.type = type;
     const channels = await this.model.find(filter).sort({ position: 1 }).lean().exec();
-    return Promise.all(channels.map((c) => this.attachItems(c as unknown as Channel)));
+    const data = await Promise.all(channels.map((c) => this.attachItems(c as unknown as Channel)));
+    this.feedCache.set(key, { at: Date.now(), data });
+    return data;
+  }
+
+  /** Invalida el caché del feed (tras refrescar/editar channels). */
+  private invalidateFeed(): void {
+    this.feedCache.clear();
   }
 
   async getBySlugResolved(slug: string) {
@@ -181,7 +210,7 @@ export class ChannelsService implements OnModuleInit {
     return ordered.map((i) => loaded.get(`${i.refType}:${String(i.refId)}`)).filter(Boolean);
   }
 
-  private async attachItems(channel: Channel & { _id?: unknown }) {
+  private async attachItems(channel: Channel & { _id?: unknown }): Promise<ResolvedChannelView> {
     const { itemType, items } = await this.resolveContent(channel);
     return {
       _id: (channel as { _id?: unknown })._id,
@@ -222,6 +251,7 @@ export class ChannelsService implements OnModuleInit {
         this.logger.warn(`Refresco falló para channel ${channel.slug}: ${(e as Error).message}`);
       }
     }
+    this.invalidateFeed();
     this.logger.log(`Channels refrescados: ${refreshed} ok, ${failed} con error`);
     return { refreshed, failed };
   }

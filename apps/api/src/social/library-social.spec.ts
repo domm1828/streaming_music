@@ -12,6 +12,7 @@ import { PlaysService } from '../catalog/plays.service';
 import { TracksService } from '../catalog/tracks.service';
 import { Track } from '../catalog/schemas/track.schema';
 import { StorageModule } from '../storage/storage.module';
+import { GeoModule } from '../geo/geo.module';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
 import { PlaylistsModule } from '../playlists/playlists.module';
@@ -51,6 +52,7 @@ describe('Library & Social (e2e, in-memory Mongo)', () => {
         EventEmitterModule.forRoot(),
         MongooseModule.forRoot(mongod.getUri()),
         StorageModule,
+        GeoModule,
         UsersModule,
         CatalogModule,
         PlaylistsModule,

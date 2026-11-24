@@ -9,6 +9,7 @@ import configuration from '../config/configuration';
 import { CatalogModule } from '../catalog/catalog.module';
 import { MailModule } from '../mail/mail.module';
 import { StorageModule } from '../storage/storage.module';
+import { GeoModule } from '../geo/geo.module';
 import { UsersModule } from '../users/users.module';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/schemas/user.schema';
@@ -58,6 +59,7 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
         MongooseModule.forRoot(mongod.getUri()),
         MailModule,
         StorageModule,
+        GeoModule,
         SettingsModule,
         UsersModule,
         CatalogModule,

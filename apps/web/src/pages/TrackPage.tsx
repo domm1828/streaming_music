@@ -4,10 +4,13 @@ import { Button } from '../components/ui';
 import { usePlayerStore } from '../features/player/player-store';
 import { LikeButton } from '../features/social/LikeButton';
 import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
+import { TrackList } from '../features/catalog/TrackList';
+import { useSimilarTracks } from '../features/discovery/discovery-queries';
 
 export function TrackPage() {
   const { id = '' } = useParams();
   const { data, isLoading, isError } = useTrack(id);
+  const similar = useSimilarTracks(id);
   const { playTrack } = usePlayerStore.getState();
 
   if (isLoading) return <p className="opacity-60">Cargando…</p>;
@@ -63,6 +66,13 @@ export function TrackPage() {
         </section>
       ) : (
         <p className="opacity-60">Esta pista no tiene letra.</p>
+      )}
+
+      {similar.data && similar.data.data.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Similares</h2>
+          <TrackList tracks={similar.data.data} />
+        </section>
       )}
     </div>
   );

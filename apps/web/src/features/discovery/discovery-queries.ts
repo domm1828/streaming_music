@@ -60,5 +60,14 @@ export function useLanding() {
   return useQuery({ queryKey: ['landing'], queryFn: () => getOne<Landing>('landing') });
 }
 
+/** Pistas similares por embedding (vacío si la IA no está configurada). */
+export function useSimilarTracks(trackId: string) {
+  return useQuery({
+    queryKey: ['similar', trackId],
+    queryFn: () => getOne<{ data: import('../catalog/types').Track[] }>(`tracks/${trackId}/similar`),
+    enabled: Boolean(trackId),
+  });
+}
+
 /** Paginación auxiliar reexportada por conveniencia de tipos. */
 export type { Paginated };

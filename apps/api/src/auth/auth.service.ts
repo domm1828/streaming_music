@@ -9,6 +9,7 @@ import { UsersService } from '../users/users.service';
 import type { AuthenticatedUser } from './types/authenticated-user';
 import { OtpService } from './otp.service';
 import { SessionMeta, TokensService } from './tokens.service';
+import { TwoFactorService } from './two-factor.service';
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly tokens: TokensService,
     private readonly otp: OtpService,
     private readonly mail: MailService,
+    private readonly twoFactor: TwoFactorService,
   ) {}
 
   async register(dto: RegisterDto, meta: SessionMeta): Promise<AuthResult> {
@@ -60,12 +62,19 @@ export class AuthService {
     await this.mail.sendEmailVerification(user.email, code);
   }
 
-  async login(dto: LoginDto, meta: SessionMeta): Promise<AuthResult> {
+  async login(dto: LoginDto, meta: SessionMeta): Promise<AuthResult | { twoFactorRequired: true }> {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     if (!user || !user.passwordHash) throw new UnauthorizedException('Credenciales inválidas');
     if (user.bannedAt) throw new UnauthorizedException('Tu cuenta está suspendida');
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenciales inválidas');
+
+    // Segundo factor si está activo.
+    if (this.twoFactor.isEnabled(user)) {
+      if (!dto.twoFactorCode) return { twoFactorRequired: true };
+      const valid = await this.twoFactor.verify(String(user._id), dto.twoFactorCode);
+      this.twoFactor.assertVerified(valid);
+    }
     return this.buildResult(String(user._id), user.email, meta);
   }
 
