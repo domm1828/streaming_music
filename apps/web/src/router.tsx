@@ -24,6 +24,8 @@ import { AdminBackstagePage } from './pages/admin/AdminBackstagePage';
 import { AdminPagesPage } from './pages/admin/AdminPagesPage';
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
 import { AdminMenusPage } from './pages/admin/AdminMenusPage';
+import { AdminLogsPage } from './pages/admin/AdminLogsPage';
+import { AdminFilesPage } from './pages/admin/AdminFilesPage';
 import { AccountPage } from './pages/AccountPage';
 import { RequirePermission } from './features/auth/RequirePermission';
 import { LoginPage } from './pages/LoginPage';
@@ -88,6 +90,8 @@ export const router = createBrowserRouter([
           { path: 'moderation', element: <AdminModerationPage /> },
           { path: 'backstage', element: <AdminBackstagePage /> },
           { path: 'pages', element: <AdminPagesPage /> },
+          { path: 'logs', element: <AdminLogsPage /> },
+          { path: 'files', element: <AdminFilesPage /> },
         ],
       },
     ],

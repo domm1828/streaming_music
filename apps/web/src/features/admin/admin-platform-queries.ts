@@ -46,6 +46,49 @@ export interface MenuItem {
   auth?: boolean;
 }
 
+// --- Logs ---
+export interface LogEntry {
+  _id: string;
+  level: 'error' | 'email';
+  message: string;
+  context: string | null;
+  meta: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export function useAdminLogs(level: string, page: number) {
+  return useQuery<Paginated<LogEntry>>({
+    queryKey: ['admin-logs', level, page],
+    queryFn: () => getList<LogEntry>('admin/logs', { level: level || undefined, page, perPage: 30 }),
+  });
+}
+
+// --- File manager ---
+export interface FileEntry {
+  _id: string;
+  url: string;
+  path: string;
+  filename: string;
+  mime: string | null;
+  size: number;
+  createdAt: string;
+}
+
+export function useAdminFiles(page: number) {
+  return useQuery<Paginated<FileEntry>>({
+    queryKey: ['admin-files', page],
+    queryFn: () => getList<FileEntry>('admin/files', { page, perPage: 24 }),
+  });
+}
+
+export function useDeleteFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mutate('delete', `admin/files/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-files'] }),
+  });
+}
+
 // --- Reportes / moderación ---
 export interface AdminReport {
   _id: string;
