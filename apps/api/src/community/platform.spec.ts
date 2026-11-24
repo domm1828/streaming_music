@@ -244,5 +244,23 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       const rejected = await backstage.reject(String(req._id), adminId, 'faltan datos');
       expect(rejected.status).toBe('rejected');
     });
+
+    it('expone los adjuntos con URL firmada y respeta el acceso', async () => {
+      const req = await backstage.submit(userId, { type: 'new', artistName: 'Con Evidencia' }, [
+        { buffer: Buffer.from('prueba'), originalname: 'contrato.pdf', mimetype: 'application/pdf' },
+      ]);
+      const urls = await backstage.attachmentUrls(String(req._id), { id: adminId, isAdmin: true });
+      expect(urls).toHaveLength(1);
+      expect(urls[0].filename).toBe('contrato.pdf');
+      expect(urls[0].url).toContain('files/signed');
+
+      // El dueño puede; un tercero sin admin, no.
+      await expect(
+        backstage.attachmentUrls(String(req._id), { id: userId, isAdmin: false }),
+      ).resolves.toBeDefined();
+      await expect(
+        backstage.attachmentUrls(String(req._id), { id: adminId, isAdmin: false }),
+      ).rejects.toBeTruthy();
+    });
   });
 });
