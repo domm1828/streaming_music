@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d5a34"/>
+      <stop offset="1" stop-color="#4e8c56"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- Nota musical en color de acento -->
+  <g fill="#f5b31e">
+    <rect x="300" y="120" width="30" height="210" rx="15"/>
+    <path d="M300 120 L410 150 L410 200 L300 170 Z"/>
+    <circle cx="285" cy="330" r="48"/>
+  </g>
+  <text x="110" y="360" font-family="Arial, sans-serif" font-size="200" font-weight="bold" fill="#ffffff">S</text>
+</svg>
