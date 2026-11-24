@@ -155,18 +155,72 @@ export function useDeleteAlbum() {
 }
 
 // --- Pistas ---
+export interface AdminTrackDetail {
+  _id: string;
+  name: string;
+  number: number;
+  image: string | null;
+  src: string | null;
+  srcType: 'audio' | 'youtube' | 'hls' | 'external';
+  duration: number;
+  album: { _id: string; name: string } | null;
+  artists: { artist: ArtistRef; primary?: boolean }[];
+  genres: Genre[];
+}
 export function useAdminTracks(search: string, page: number) {
   return useQuery<Paginated<Track>>({
     queryKey: ['admin-tracks', search, page],
     queryFn: () => getList('tracks', { search, page, perPage: 20 }),
   });
 }
+export function useAdminTrack(id: string | null) {
+  return useQuery({
+    queryKey: ['admin-track', id],
+    queryFn: () => getOne<AdminTrackDetail>(`tracks/${id}`),
+    enabled: Boolean(id),
+  });
+}
 export function useUpdateTrack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...dto }: { id: string; name?: string; number?: number }) =>
-      mutate<Track>('patch', `tracks/${id}`, dto),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-tracks'] }),
+    mutationFn: ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      name?: string;
+      number?: number;
+      album?: string;
+      artists?: string[];
+      genres?: string[];
+      image?: string;
+    }) => mutate<Track>('patch', `tracks/${id}`, dto),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['admin-tracks'] });
+      qc.invalidateQueries({ queryKey: ['admin-track', v.id] });
+    },
+  });
+}
+export function useReplaceTrackAudio(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await apiClient.post<ApiResponse<Track>>(`tracks/${id}/audio`, form);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-track', id] });
+      qc.invalidateQueries({ queryKey: ['admin-tracks'] });
+    },
+  });
+}
+export function useAlbumSearch(search: string) {
+  return useQuery<Paginated<Album>>({
+    queryKey: ['album-search', search],
+    queryFn: () => getList('albums', { search, perPage: 15 }),
+    enabled: search.trim().length > 0,
   });
 }
 export function useDeleteTrack() {

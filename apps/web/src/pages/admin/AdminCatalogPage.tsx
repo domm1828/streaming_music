@@ -4,6 +4,7 @@ import { useDebounce } from '../../lib/use-debounce';
 import { Column, DataTable } from '../../features/admin/DataTable';
 import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
+import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
 import { Tabs } from '../../components/Tabs';
 import {
   useAdminAlbums,
@@ -286,6 +287,7 @@ function TracksTab() {
   const update = useUpdateTrack();
   const del = useDeleteTrack();
   const [lyricsFor, setLyricsFor] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const columns: Column<Track>[] = [
     { key: 'number', header: '#', className: 'w-10' },
@@ -305,6 +307,12 @@ function TracksTab() {
         actions={(t) => (
           <div className="flex justify-end gap-2">
             <button
+              onClick={() => setEditId(t._id)}
+              className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary"
+            >
+              Editar
+            </button>
+            <button
               onClick={() => setLyricsFor(lyricsFor === t._id ? null : t._id)}
               className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary"
             >
@@ -314,6 +322,7 @@ function TracksTab() {
           </div>
         )}
       />
+      {editId && <TrackEditDialog trackId={editId} onClose={() => setEditId(null)} />}
       {lyricsFor && (
         <div>
           <p className="text-sm font-medium">
