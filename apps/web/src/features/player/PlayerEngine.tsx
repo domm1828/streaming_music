@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
+import { getOfflineBlob } from '../offline/offline-db';
 import { currentTrack, usePlayerStore } from './player-store';
 import { logPlay } from './use-log-play';
 import { YouTubeProvider } from './YouTubeProvider';
@@ -18,6 +19,7 @@ export function PlayerEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const loadedIdRef = useRef<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const isYoutube = track?.srcType === 'youtube';
 
@@ -31,24 +33,54 @@ export function PlayerEngine() {
     hlsRef.current?.destroy();
     hlsRef.current = null;
 
+    const revokeObjectUrl = () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+
     const isHls = track.srcType === 'hls' || track.src.endsWith('.m3u8');
     if (isHls && Hls.isSupported()) {
+      revokeObjectUrl();
       const hls = new Hls();
       hls.loadSource(track.src);
       hls.attachMedia(audio);
       hlsRef.current = hls;
+      logPlay(track._id);
+      if (usePlayerStore.getState().isPlaying) void audio.play().catch(() => undefined);
     } else {
-      audio.src = track.src;
-      audio.load();
+      // Audio: preferir una copia offline (blob) si existe; si no, la red.
+      const trackId = track._id;
+      const networkSrc = track.src;
+      void getOfflineBlob(trackId).then((blob) => {
+        if (loadedIdRef.current !== trackId || !audioRef.current) return;
+        revokeObjectUrl();
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          objectUrlRef.current = url;
+          audioRef.current.src = url;
+        } else {
+          audioRef.current.src = networkSrc;
+        }
+        audioRef.current.load();
+        logPlay(trackId);
+        if (usePlayerStore.getState().isPlaying) void audioRef.current.play().catch(() => undefined);
+      });
     }
-    logPlay(track._id);
-    if (usePlayerStore.getState().isPlaying) void audio.play().catch(() => undefined);
 
     return () => {
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
   }, [track, isYoutube]);
+
+  // Revocar el object URL offline al desmontar.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
 
   // Play / pause.
   useEffect(() => {
