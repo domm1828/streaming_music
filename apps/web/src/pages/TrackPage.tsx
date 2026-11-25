@@ -8,6 +8,7 @@ import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
 import { OfflineButton } from '../features/offline/OfflineButton';
 import { TrackList } from '../features/catalog/TrackList';
 import { TrackComments } from '../features/community/TrackComments';
+import { TrackWaveform } from '../features/player/TrackWaveform';
 import { MediaHeader, PlayButton, SectionHeader, pillClass } from '../components/media';
 import { useSimilarTracks } from '../features/discovery/discovery-queries';
 
@@ -91,6 +92,10 @@ export function TrackPage() {
           ))}
         </div>
       )}
+
+      <section className="max-w-2xl">
+        <TrackWaveform trackId={track._id} duration={track.duration ?? 0} onSeek={seekToTime} />
+      </section>
 
       {data.lyric ? (
         <section className="max-w-2xl rounded-panel bg-chip p-6">
