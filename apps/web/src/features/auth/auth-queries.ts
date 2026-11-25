@@ -162,6 +162,46 @@ export function useRevokeApiToken() {
   });
 }
 
+export type SocialProviderName = 'google' | 'facebook' | 'twitter';
+
+export interface SocialConnection {
+  provider: SocialProviderName;
+  connectedAt: string;
+}
+
+/** Proveedores sociales vinculados a la cuenta. */
+export function useSocialConnections() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: ['social-connections'],
+    queryFn: async () => (await apiClient.get<ApiResponse<SocialConnection[]>>('account/social')).data.data,
+    enabled: Boolean(accessToken),
+  });
+}
+
+/** Proveedores sociales disponibles (configurados por el admin). */
+export function useSocialProviders() {
+  return useQuery({
+    queryKey: ['social-providers'],
+    queryFn: async () =>
+      (await apiClient.get<ApiResponse<Record<SocialProviderName, boolean>>>('auth/social/providers')).data.data,
+  });
+}
+
+export function useDisconnectSocial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (provider: SocialProviderName) => apiClient.delete(`account/social/${provider}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['social-connections'] }),
+  });
+}
+
+/** Inicia el flujo para vincular un proveedor a la cuenta actual y redirige al proveedor. */
+export async function connectSocial(provider: SocialProviderName): Promise<void> {
+  const { data } = await apiClient.get<ApiResponse<{ url: string }>>(`auth/social/${provider}/connect`);
+  window.location.href = data.data.url;
+}
+
 /** Carga el estado inicial y sincroniza el usuario y las traducciones en el store. */
 export function useBootstrap() {
   const setUser = useAuthStore((s) => s.setUser);

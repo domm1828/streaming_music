@@ -141,6 +141,30 @@ describe('Advanced & hardening (e2e, in-memory Mongo)', () => {
         social.loginWithProfile('google', { providerId: 'evil', email: 'social@test.io', emailVerified: false, name: 'Evil' }, meta),
       ).rejects.toThrow();
     });
+
+    it('vincula/lista/desvincula conexiones desde la cuenta; protege el último acceso', async () => {
+      const u = await users.create({ name: 'Conn', username: 'conn', email: 'conn@test.io' }); // sin password
+      const id = String(u._id);
+
+      await social.linkToUser(id, 'facebook', { providerId: 'fb1', email: 'conn@test.io', emailVerified: true, name: 'Conn' });
+      let linked = await social.listForUser(id);
+      expect(linked.map((l) => l.provider)).toContain('facebook');
+
+      // No se puede desvincular el único método de acceso (no tiene contraseña).
+      await expect(social.unlink(id, 'facebook')).rejects.toThrow();
+
+      // Con una segunda conexión, sí se puede desvincular una.
+      await social.linkToUser(id, 'google', { providerId: 'gg1', email: 'conn@test.io', emailVerified: true, name: 'Conn' });
+      await social.unlink(id, 'facebook');
+      linked = await social.listForUser(id);
+      expect(linked.map((l) => l.provider)).toEqual(['google']);
+
+      // No se puede robar una conexión ya usada por otra cuenta.
+      const other = await users.create({ name: 'Other', username: 'other', email: 'other@test.io' });
+      await expect(
+        social.linkToUser(String(other._id), 'google', { providerId: 'gg1', email: 'x', emailVerified: true, name: 'x' }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('Búsqueda semántica', () => {

@@ -11,6 +11,7 @@ import { TwoFactorService } from './two-factor.service';
 import { TwoFactorController } from './two-factor.controller';
 import { SocialAuthService } from './social-auth.service';
 import { SocialAuthController } from './social-auth.controller';
+import { AccountSocialController } from './account-social.controller';
 import { AuthSettingsController } from './auth-settings.controller';
 import { GoogleOAuthService } from './google-oauth.service';
 import { FacebookOAuthService } from './facebook-oauth.service';
@@ -53,6 +54,7 @@ import { ApiToken, ApiTokenSchema } from './schemas/api-token.schema';
     AuthController,
     TwoFactorController,
     SocialAuthController,
+    AccountSocialController,
     ApiTokensController,
     AuthSettingsController,
   ],
