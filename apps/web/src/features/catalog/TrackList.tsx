@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft, ListEnd, ListMusic, ListPlus, MoreHorizontal, Pause, Play } from 'lucide-react';
 import { currentTrack, usePlayerStore } from '../player/player-store';
+import { EqualizerBars } from '../player/EqualizerBars';
 import { useAuth } from '../auth/use-auth';
 import { useAddTrackToPlaylist, useMyPlaylists } from '../playlists/playlist-queries';
 import type { Track } from './types';
@@ -79,12 +80,15 @@ export function TrackList({ tracks, showAlbum = false }: { tracks: Track[]; show
               )}
 
               <div className="min-w-0 flex-1">
-                <Link
-                  to={`/track/${track._id}`}
-                  className={`block truncate text-sm font-medium hover:underline ${isCurrent ? 'text-brand-primary' : ''}`}
-                >
-                  {track.name}
-                </Link>
+                <span className="flex items-center gap-2">
+                  {isCurrent && isPlaying && <EqualizerBars className="shrink-0" />}
+                  <Link
+                    to={`/track/${track._id}`}
+                    className={`block truncate text-sm font-medium hover:underline ${isCurrent ? 'text-brand-primary' : ''}`}
+                  >
+                    {track.name}
+                  </Link>
+                </span>
                 <p className="truncate text-xs text-muted">
                   {track.artists?.map((a, j) => (
                     <span key={a.artist._id}>

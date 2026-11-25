@@ -1,4 +1,4 @@
-import { Download, ListMusic, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Download, ListMusic, Maximize2, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'react-router';
 import { IconButton } from '../../components/IconButton';
 import { LikeButton } from '../social/LikeButton';
@@ -16,11 +16,13 @@ export function PlayerBar({
   queueOpen,
   onToggleLyrics,
   lyricsOpen,
+  onExpand,
 }: {
   onToggleQueue: () => void;
   queueOpen: boolean;
   onToggleLyrics: () => void;
   lyricsOpen: boolean;
+  onExpand: () => void;
 }) {
   const track = usePlayerStore(currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -113,6 +115,9 @@ export function PlayerBar({
           )}
           <IconButton size="sm" active={lyricsOpen} onClick={onToggleLyrics} aria-label="Letra" className="hidden lg:inline-flex">
             <Mic2 size={16} />
+          </IconButton>
+          <IconButton size="sm" onClick={onExpand} aria-label="Pantalla completa">
+            <Maximize2 size={16} />
           </IconButton>
           <IconButton size="sm" active={queueOpen} onClick={onToggleQueue} aria-label="Cola" className="hidden lg:inline-flex">
             <ListMusic size={16} />
