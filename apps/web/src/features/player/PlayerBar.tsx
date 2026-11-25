@@ -1,4 +1,4 @@
-import { Download, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Download, ListMusic, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'react-router';
 import { IconButton } from '../../components/IconButton';
 import { LikeButton } from '../social/LikeButton';
@@ -11,7 +11,17 @@ function fmt(t: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function PlayerBar({ onToggleQueue, queueOpen }: { onToggleQueue: () => void; queueOpen: boolean }) {
+export function PlayerBar({
+  onToggleQueue,
+  queueOpen,
+  onToggleLyrics,
+  lyricsOpen,
+}: {
+  onToggleQueue: () => void;
+  queueOpen: boolean;
+  onToggleLyrics: () => void;
+  lyricsOpen: boolean;
+}) {
   const track = usePlayerStore(currentTrack);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
@@ -101,6 +111,9 @@ export function PlayerBar({ onToggleQueue, queueOpen }: { onToggleQueue: () => v
               <Download size={16} />
             </a>
           )}
+          <IconButton size="sm" active={lyricsOpen} onClick={onToggleLyrics} aria-label="Letra" className="hidden lg:inline-flex">
+            <Mic2 size={16} />
+          </IconButton>
           <IconButton size="sm" active={queueOpen} onClick={onToggleQueue} aria-label="Cola" className="hidden lg:inline-flex">
             <ListMusic size={16} />
           </IconButton>
