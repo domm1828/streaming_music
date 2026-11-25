@@ -217,3 +217,8 @@ export function useBootstrap() {
     },
   });
 }
+
+/** Settings públicos del sitio (desde el bootstrap, cacheado). */
+export function usePublicSettings() {
+  return useBootstrap().data?.settings;
+}

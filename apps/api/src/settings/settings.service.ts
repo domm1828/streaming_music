@@ -58,6 +58,11 @@ const DEFAULT_SETTINGS: SeedSetting[] = [
   { key: 'uploads.maxAudioMb', value: 50, isPublic: false, group: 'uploads' },
   // Marca
   { key: 'brandColors', value: BRAND.colors, isPublic: true, group: 'branding' },
+  // Reproductor (públicos: el frontend los aplica al player)
+  { key: 'player.enableDownload', value: true, isPublic: true, group: 'player' },
+  { key: 'player.hideLyrics', value: false, isPublic: true, group: 'player' },
+  { key: 'player.hideQueue', value: false, isPublic: true, group: 'player' },
+  { key: 'player.hideFullscreen', value: false, isPublic: true, group: 'player' },
 ];
 
 /** Separa un "Nombre <email@dominio>" en nombre y dirección. */
