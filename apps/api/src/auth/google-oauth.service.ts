@@ -35,6 +35,11 @@ export class GoogleOAuthService {
     return `${AUTH_URL}?${params.toString()}`;
   }
 
+  /** Forma común con el resto de proveedores (sin PKCE). */
+  buildAuthorize(redirectUri: string): { url: string } {
+    return { url: this.authorizeUrl(redirectUri) };
+  }
+
   /** Intercambia el code por el perfil del usuario. */
   async exchange(code: string, redirectUri: string): Promise<SocialProfileData> {
     const tokenRes = await fetch(TOKEN_URL, {
