@@ -11,7 +11,12 @@ import { decryptSecret, encryptSecret, isEncrypted } from './secret-crypto';
  * Claves cuyo valor es un secreto: se cifran en reposo, se descifran sólo al
  * consumirlas internamente, y nunca se devuelven al panel admin ni a /bootstrap.
  */
-export const SECRET_SETTING_KEYS = new Set<string>(['mail.pass']);
+export const SECRET_SETTING_KEYS = new Set<string>([
+  'mail.pass',
+  'auth.social.google.secret',
+  'auth.social.facebook.secret',
+  'auth.social.twitter.secret',
+]);
 
 export const LANDING_KEY = 'landing';
 
@@ -82,6 +87,7 @@ export class SettingsService implements OnModuleInit {
       else await this.model.updateOne({ key: s.key }, { $set: { group: s.group, isPublic: s.isPublic } }).exec();
     }
     await this.seedEmailDefaults();
+    await this.seedAuthDefaults();
     await this.refreshCache();
   }
 
@@ -107,6 +113,44 @@ export class SettingsService implements OnModuleInit {
       { key: 'mail.pass', value: '', isPublic: false, group: 'email' },
       { key: 'mail.fromName', value: parsed.name, isPublic: false, group: 'email' },
       { key: 'mail.fromAddress', value: parsed.address, isPublic: false, group: 'email' },
+    ];
+    for (const s of defaults) {
+      const exists = await this.model.exists({ key: s.key });
+      if (!exists) await this.model.create(s);
+      else await this.model.updateOne({ key: s.key }, { $set: { group: s.group, isPublic: s.isPublic } }).exec();
+    }
+  }
+
+  /**
+   * Siembra los settings de autenticación (grupo privado `auth`). El `enable` de
+   * cada proveedor social arranca según si había credenciales en el `.env`, para
+   * no apagar un login que ya funcionaba. Las credenciales NO se siembran: se
+   * resuelven con fallback al `.env` hasta que el admin las guarde por el panel.
+   */
+  private async seedAuthDefaults(): Promise<void> {
+    const integrations = this.config.get<Record<string, string>>('integrations') ?? {};
+    const hasCreds = (id?: string, secret?: string) => Boolean(id && secret);
+    const defaults: SeedSetting[] = [
+      { key: 'auth.requireEmailConfirmation', value: false, isPublic: false, group: 'auth' },
+      { key: 'auth.social.requireAccount', value: false, isPublic: false, group: 'auth' },
+      {
+        key: 'auth.social.google.enable',
+        value: hasCreds(integrations.googleClientId, integrations.googleClientSecret),
+        isPublic: false,
+        group: 'auth',
+      },
+      {
+        key: 'auth.social.facebook.enable',
+        value: hasCreds(integrations.facebookClientId, integrations.facebookClientSecret),
+        isPublic: false,
+        group: 'auth',
+      },
+      {
+        key: 'auth.social.twitter.enable',
+        value: hasCreds(integrations.twitterClientId, integrations.twitterClientSecret),
+        isPublic: false,
+        group: 'auth',
+      },
     ];
     for (const s of defaults) {
       const exists = await this.model.exists({ key: s.key });

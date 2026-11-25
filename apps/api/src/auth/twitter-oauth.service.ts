@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IntegrationsConfig } from '../config/configuration';
-import { createPkce, type OAuthClient } from './oauth-provider';
+import { SettingsService } from '../settings/settings.service';
+import { BaseSocialOAuth, createPkce } from './oauth-provider';
+import type { SocialProvider } from './schemas/social-profile.schema';
 import type { SocialProfileData } from './social-auth.service';
 
 const AUTH_URL = 'https://twitter.com/i/oauth2/authorize';
@@ -9,30 +11,29 @@ const TOKEN_URL = 'https://api.twitter.com/2/oauth2/token';
 const ME_URL = 'https://api.twitter.com/2/users/me';
 
 /**
- * Cliente OAuth 2.0 (PKCE) de Twitter/X. Gracioso si no hay credenciales.
+ * Cliente OAuth 2.0 (PKCE) de Twitter/X. Credenciales desde settings/.env.
  * Nota: X sólo entrega el email de la cuenta a apps con acceso elevado; sin él,
  * el login falla de forma controlada (no se puede enlazar/crear sin email verificable).
  */
 @Injectable()
-export class TwitterOAuthService implements OAuthClient {
-  private readonly clientId: string;
-  private readonly clientSecret: string;
+export class TwitterOAuthService extends BaseSocialOAuth {
+  protected readonly provider: SocialProvider = 'twitter';
 
-  constructor(config: ConfigService) {
-    const cfg = config.get<IntegrationsConfig>('integrations');
-    this.clientId = cfg?.twitterClientId ?? '';
-    this.clientSecret = cfg?.twitterClientSecret ?? '';
+  constructor(config: ConfigService, settings: SettingsService) {
+    super(config, settings);
   }
 
-  isConfigured(): boolean {
-    return Boolean(this.clientId && this.clientSecret);
+  protected envCreds(): { id: string; secret: string } {
+    const cfg = this.config.get<IntegrationsConfig>('integrations');
+    return { id: cfg?.twitterClientId ?? '', secret: cfg?.twitterClientSecret ?? '' };
   }
 
-  buildAuthorize(redirectUri: string): { url: string; verifier: string } {
+  async buildAuthorize(redirectUri: string): Promise<{ url: string; verifier: string }> {
+    const { id } = await this.resolveCreds();
     const { verifier, challenge } = createPkce();
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: this.clientId,
+      client_id: id,
       redirect_uri: redirectUri,
       scope: 'users.read tweet.read offline.access',
       state: 'state',
@@ -43,7 +44,8 @@ export class TwitterOAuthService implements OAuthClient {
   }
 
   async exchange(code: string, redirectUri: string, verifier?: string): Promise<SocialProfileData> {
-    const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    const { id, secret } = await this.resolveCreds();
+    const auth = Buffer.from(`${id}:${secret}`).toString('base64');
     const tokenRes = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: {
@@ -53,7 +55,7 @@ export class TwitterOAuthService implements OAuthClient {
       body: new URLSearchParams({
         code,
         grant_type: 'authorization_code',
-        client_id: this.clientId,
+        client_id: id,
         redirect_uri: redirectUri,
         code_verifier: verifier ?? '',
       }).toString(),

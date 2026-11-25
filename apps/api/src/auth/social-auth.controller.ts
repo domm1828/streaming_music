@@ -44,21 +44,22 @@ export class SocialAuthController {
 
   /** Estado de los proveedores sociales configurados. */
   @Get('providers')
-  providers() {
-    return {
-      google: this.google.isConfigured(),
-      facebook: this.facebook.isConfigured(),
-      twitter: this.twitter.isConfigured(),
-    };
+  async providers() {
+    const [google, facebook, twitter] = await Promise.all([
+      this.google.isConfigured(),
+      this.facebook.isConfigured(),
+      this.twitter.isConfigured(),
+    ]);
+    return { google, facebook, twitter };
   }
 
   /** Inicia el flujo OAuth del proveedor. */
   @Get(':provider')
-  start(@Param('provider') provider: string, @Req() req: Request, @Res() res: Response) {
+  async start(@Param('provider') provider: string, @Req() req: Request, @Res() res: Response) {
     const client = this.clientFor(provider);
     if (!client) throw new NotFoundException('Proveedor social desconocido');
-    if (!client.isConfigured()) throw new NotFoundException(`Login con ${provider} no está configurado`);
-    const { url, verifier } = client.buildAuthorize(this.redirectUri(req, provider));
+    if (!(await client.isConfigured())) throw new NotFoundException(`Login con ${provider} no está configurado`);
+    const { url, verifier } = await client.buildAuthorize(this.redirectUri(req, provider));
     if (verifier) {
       res.cookie(`sm_oauth_${provider}`, verifier, {
         httpOnly: true,
@@ -80,7 +81,7 @@ export class SocialAuthController {
   ) {
     const appUrl = this.config.get<AppConfig>('app')!.appUrl.replace(/\/$/, '');
     const client = this.clientFor(provider);
-    if (!client || !client.isConfigured() || !code) {
+    if (!client || !code || !(await client.isConfigured())) {
       return res.redirect(`${appUrl}/login?social_error=1`);
     }
     try {

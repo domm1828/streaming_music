@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { randomBytes } from 'node:crypto';
 import slugify from 'slugify';
+import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import type { AuthResult } from './auth.service';
 import { SessionMeta, TokensService } from './tokens.service';
@@ -23,6 +24,7 @@ export class SocialAuthService {
     @InjectModel(SocialProfile.name) private readonly model: Model<SocialProfileDocument>,
     private readonly users: UsersService,
     private readonly tokens: TokensService,
+    private readonly settings: SettingsService,
   ) {}
 
   private async buildResult(userId: string, email: string, meta: SessionMeta): Promise<AuthResult> {
@@ -63,6 +65,10 @@ export class SocialAuthService {
     // 2) Enlazar a una cuenta existente por email, o crear una nueva.
     let user = await this.users.findByEmail(profile.email);
     if (!user) {
+      // Si el admin exige cuenta previa, no se crea una nueva desde el login social.
+      if (await this.settings.getBoolean('auth.social.requireAccount', false)) {
+        throw new UnauthorizedException('Necesitás una cuenta existente para iniciar sesión con redes');
+      }
       user = await this.users.create({
         name: profile.name,
         username: await this.uniqueUsername(profile.name || profile.email.split('@')[0]),

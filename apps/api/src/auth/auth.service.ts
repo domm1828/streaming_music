@@ -75,6 +75,11 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException('Credenciales inválidas');
 
+    // Confirmación de email obligatoria (si está activada en Ajustes).
+    if (!user.emailVerifiedAt && (await this.settings.getBoolean('auth.requireEmailConfirmation', false))) {
+      throw new ForbiddenException('Confirmá tu email antes de iniciar sesión');
+    }
+
     // Segundo factor si está activo.
     if (this.twoFactor.isEnabled(user)) {
       if (!dto.twoFactorCode) return { twoFactorRequired: true };
