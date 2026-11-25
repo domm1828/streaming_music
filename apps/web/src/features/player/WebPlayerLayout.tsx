@@ -4,13 +4,15 @@ import { useRadioAutoExtend } from '../discovery/use-radio-autoextend';
 import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 import { QueuePanel } from './QueuePanel';
+import { LyricsPanel } from './LyricsPanel';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
-/** Shell principal: sidebar + topbar + contenido + panel de cola + barra de reproductor. */
+/** Shell principal: sidebar + topbar + contenido + panel de cola/letra + barra de reproductor. */
 export function WebPlayerLayout() {
   useRadioAutoExtend();
   const [queueOpen, setQueueOpen] = useState(false);
+  const [lyricsOpen, setLyricsOpen] = useState(false);
 
   return (
     <div className="flex h-screen flex-col bg-surface text-main">
@@ -24,11 +26,17 @@ export function WebPlayerLayout() {
             </div>
           </div>
         </main>
+        <LyricsPanel open={lyricsOpen} onClose={() => setLyricsOpen(false)} />
         <QueuePanel open={queueOpen} onClose={() => setQueueOpen(false)} />
       </div>
 
       <div className="px-2 pb-2">
-        <PlayerBar onToggleQueue={() => setQueueOpen((o) => !o)} queueOpen={queueOpen} />
+        <PlayerBar
+          onToggleQueue={() => setQueueOpen((o) => !o)}
+          queueOpen={queueOpen}
+          onToggleLyrics={() => setLyricsOpen((o) => !o)}
+          lyricsOpen={lyricsOpen}
+        />
       </div>
       <PlayerEngine />
     </div>
