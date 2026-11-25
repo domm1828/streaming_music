@@ -8,6 +8,8 @@ import { TrackPage } from './pages/TrackPage';
 import { GenrePage } from './pages/GenrePage';
 import { TagPage } from './pages/TagPage';
 import { AdminTagsPage } from './pages/admin/AdminTagsPage';
+import { AdminAppearancePage } from './pages/admin/AdminAppearancePage';
+import { AdminLocalizationsPage } from './pages/admin/AdminLocalizationsPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { PlaylistPage } from './pages/PlaylistPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -115,6 +117,8 @@ export const router = createBrowserRouter([
           { path: 'tags', element: <AdminTagsPage /> },
           { path: 'import', element: <AdminImportPage /> },
           { path: 'settings', element: <AdminSettingsPage /> },
+          { path: 'appearance', element: <AdminAppearancePage /> },
+          { path: 'localizations', element: <AdminLocalizationsPage /> },
           { path: 'moderation', element: <AdminModerationPage /> },
           { path: 'backstage', element: <AdminBackstagePage /> },
           { path: 'pages', element: <AdminPagesPage /> },
