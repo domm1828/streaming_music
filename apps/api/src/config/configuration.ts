@@ -42,6 +42,10 @@ export interface IntegrationsConfig {
   openaiApiKey: string;
   googleClientId: string;
   googleClientSecret: string;
+  facebookClientId: string;
+  facebookClientSecret: string;
+  twitterClientId: string;
+  twitterClientSecret: string;
   sentryDsn: string;
 }
 
@@ -100,6 +104,10 @@ export default (): {
     openaiApiKey: process.env.OPENAI_API_KEY ?? '',
     googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    facebookClientId: process.env.FACEBOOK_CLIENT_ID ?? '',
+    facebookClientSecret: process.env.FACEBOOK_CLIENT_SECRET ?? '',
+    twitterClientId: process.env.TWITTER_CLIENT_ID ?? '',
+    twitterClientSecret: process.env.TWITTER_CLIENT_SECRET ?? '',
     sentryDsn: process.env.SENTRY_DSN ?? '',
   },
   storage: {

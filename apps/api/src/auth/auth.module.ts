@@ -12,6 +12,8 @@ import { TwoFactorController } from './two-factor.controller';
 import { SocialAuthService } from './social-auth.service';
 import { SocialAuthController } from './social-auth.controller';
 import { GoogleOAuthService } from './google-oauth.service';
+import { FacebookOAuthService } from './facebook-oauth.service';
+import { TwitterOAuthService } from './twitter-oauth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ApiTokenStrategy } from './strategies/api-token.strategy';
 import { ApiTokensService } from './api-tokens.service';
@@ -41,6 +43,8 @@ import { ApiToken, ApiTokenSchema } from './schemas/api-token.schema';
     TwoFactorService,
     SocialAuthService,
     GoogleOAuthService,
+    FacebookOAuthService,
+    TwitterOAuthService,
     JwtStrategy,
     ApiTokenStrategy,
   ],
