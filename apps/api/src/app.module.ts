@@ -21,6 +21,7 @@ import { ExportsModule } from './exports/exports.module';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { LogsModule } from './logs/logs.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LocalizationModule } from './localization/localization.module';
 import { MailModule } from './mail/mail.module';
@@ -77,6 +78,7 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     AnalyticsModule,
     LogsModule,
+    MaintenanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
