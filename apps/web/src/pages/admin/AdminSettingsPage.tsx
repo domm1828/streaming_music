@@ -64,8 +64,6 @@ export function AdminSettingsPage() {
 
   return (
     <div className="max-w-xl space-y-6">
-      <h2 className="text-2xl font-bold">Ajustes</h2>
-
       <section className="space-y-4 rounded-panel bg-chip p-5">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">General</h3>
         <label className="block">
