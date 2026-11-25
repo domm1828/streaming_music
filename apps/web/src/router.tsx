@@ -11,6 +11,8 @@ import { AdminTagsPage } from './pages/admin/AdminTagsPage';
 import { AdminAppearancePage } from './pages/admin/AdminAppearancePage';
 import { AdminEmailPage } from './pages/admin/AdminEmailPage';
 import { AdminAuthPage } from './pages/admin/AdminAuthPage';
+import { AdminPlayerPage } from './pages/admin/AdminPlayerPage';
+import { AdminProvidersPage } from './pages/admin/AdminProvidersPage';
 import { AdminLocalizationsPage } from './pages/admin/AdminLocalizationsPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { PlaylistPage } from './pages/PlaylistPage';
@@ -126,6 +128,8 @@ export const router = createBrowserRouter([
               { path: 'general', element: <AdminSettingsPage /> },
               { path: 'email', element: <AdminEmailPage /> },
               { path: 'auth', element: <AdminAuthPage /> },
+              { path: 'player', element: <AdminPlayerPage /> },
+              { path: 'providers', element: <AdminProvidersPage /> },
               { path: 'appearance', element: <AdminAppearancePage /> },
               { path: 'localizations', element: <AdminLocalizationsPage /> },
               { path: 'menus', element: <AdminMenusPage /> },

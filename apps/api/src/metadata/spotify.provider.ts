@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OnEvent } from '@nestjs/event-emitter';
 import type { IntegrationsConfig } from '../config/configuration';
+import { SETTINGS_CHANGED_EVENT, SettingsService } from '../settings/settings.service';
 import {
   MetadataProvider,
   NormalizedAlbum,
@@ -48,18 +50,37 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Cliente Spotify con autenticación client-credentials y manejo de rate limit. */
 @Injectable()
-export class SpotifyProvider implements MetadataProvider {
+export class SpotifyProvider implements MetadataProvider, OnModuleInit {
   readonly name = 'spotify';
   private readonly logger = new Logger(SpotifyProvider.name);
   private token: string | null = null;
   private tokenExpiresAt = 0;
-  private readonly clientId: string;
-  private readonly clientSecret: string;
+  private clientId: string;
+  private clientSecret: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly settings?: SettingsService,
+  ) {
     const cfg = config.get<IntegrationsConfig>('integrations');
     this.clientId = cfg?.spotifyClientId ?? '';
     this.clientSecret = cfg?.spotifyClientSecret ?? '';
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.refreshCreds();
+  }
+
+  /** Recarga las credenciales desde los settings (fallback al `.env`) ante un cambio. */
+  @OnEvent(SETTINGS_CHANGED_EVENT)
+  async refreshCreds(): Promise<void> {
+    const cfg = this.config.get<IntegrationsConfig>('integrations');
+    const envId = cfg?.spotifyClientId ?? '';
+    const envSecret = cfg?.spotifyClientSecret ?? '';
+    this.clientId = this.settings ? await this.settings.get('providers.spotify.id', envId) : envId;
+    this.clientSecret = this.settings ? await this.settings.get('providers.spotify.secret', envSecret) : envSecret;
+    this.token = null; // invalida el token cacheado si cambiaron las credenciales
+    this.tokenExpiresAt = 0;
   }
 
   isConfigured(): boolean {

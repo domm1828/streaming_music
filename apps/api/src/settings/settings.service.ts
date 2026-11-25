@@ -1,5 +1,6 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BRAND } from '@stream-music/shared';
@@ -16,7 +17,12 @@ export const SECRET_SETTING_KEYS = new Set<string>([
   'auth.social.google.secret',
   'auth.social.facebook.secret',
   'auth.social.twitter.secret',
+  'providers.spotify.secret',
+  'providers.lastfm.apiKey',
 ]);
+
+/** Evento emitido cuando cambian settings (los consumidores recargan su config). */
+export const SETTINGS_CHANGED_EVENT = 'settings.changed';
 
 export const LANDING_KEY = 'landing';
 
@@ -58,6 +64,11 @@ const DEFAULT_SETTINGS: SeedSetting[] = [
   { key: 'uploads.maxAudioMb', value: 50, isPublic: false, group: 'uploads' },
   // Marca
   { key: 'brandColors', value: BRAND.colors, isPublic: true, group: 'branding' },
+  // Reproductor (públicos: el frontend los aplica al player)
+  { key: 'player.enableDownload', value: true, isPublic: true, group: 'player' },
+  { key: 'player.hideLyrics', value: false, isPublic: true, group: 'player' },
+  { key: 'player.hideQueue', value: false, isPublic: true, group: 'player' },
+  { key: 'player.hideFullscreen', value: false, isPublic: true, group: 'player' },
 ];
 
 /** Separa un "Nombre <email@dominio>" en nombre y dirección. */
@@ -76,6 +87,7 @@ export class SettingsService implements OnModuleInit {
   constructor(
     @InjectModel(Setting.name) private readonly model: Model<SettingDocument>,
     private readonly config: ConfigService,
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -233,6 +245,7 @@ export class SettingsService implements OnModuleInit {
     if (meta?.group !== undefined) update.group = meta.group;
     await this.model.updateOne({ key }, { $set: update }, { upsert: true }).exec();
     await this.refreshCache();
+    this.events?.emit(SETTINGS_CHANGED_EVENT);
     return value;
   }
 
@@ -244,6 +257,7 @@ export class SettingsService implements OnModuleInit {
         .exec();
     }
     await this.refreshCache();
+    this.events?.emit(SETTINGS_CHANGED_EVENT);
     return entries.length;
   }
 }

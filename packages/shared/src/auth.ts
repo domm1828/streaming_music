@@ -17,12 +17,20 @@ export interface AuthResult {
 }
 
 /** Estado inicial que entrega GET /bootstrap. */
+export interface PlayerSettings {
+  enableDownload: boolean;
+  hideLyrics: boolean;
+  hideQueue: boolean;
+  hideFullscreen: boolean;
+}
+
 export interface BootstrapData {
   settings: {
     appName: string;
     brandColors: { primary: string; secondary: string; accent: string };
     defaultLocale: string;
     billingEnabled: boolean;
+    player: PlayerSettings;
   };
   menus: {
     primary: { label: string; path: string; auth?: boolean }[];
