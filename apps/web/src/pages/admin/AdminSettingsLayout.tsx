@@ -5,6 +5,7 @@ const TABS = [
   { to: '/admin/settings/email', label: 'Email' },
   { to: '/admin/settings/auth', label: 'Autenticación' },
   { to: '/admin/settings/player', label: 'Reproductor' },
+  { to: '/admin/settings/providers', label: 'Proveedores' },
   { to: '/admin/settings/appearance', label: 'Apariencia' },
   { to: '/admin/settings/localizations', label: 'Idiomas' },
   { to: '/admin/settings/menus', label: 'Menús' },

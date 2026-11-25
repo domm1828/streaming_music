@@ -21,6 +21,7 @@ import { YoutubeIngestService } from './youtube-ingest.service';
 import { YOUTUBE_DOWNLOADER, YtdlDownloader } from './youtube-downloader';
 import { AudioService } from '../catalog/audio.service';
 import { ImportController } from './import.controller';
+import { ProvidersSettingsController } from './providers-settings.controller';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { ImportController } from './import.controller';
     ImportService,
     LyricsImportService,
   ],
-  controllers: [ImportController],
+  controllers: [ImportController, ProvidersSettingsController],
   exports: [ImportService, LyricsImportService],
 })
 export class MetadataModule {}
