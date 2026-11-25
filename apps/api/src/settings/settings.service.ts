@@ -1,8 +1,17 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BRAND } from '@stream-music/shared';
+import type { MailConfig } from '../config/configuration';
 import { Setting, SettingDocument } from './schemas/setting.schema';
+import { decryptSecret, encryptSecret, isEncrypted } from './secret-crypto';
+
+/**
+ * Claves cuyo valor es un secreto: se cifran en reposo, se descifran sólo al
+ * consumirlas internamente, y nunca se devuelven al panel admin ni a /bootstrap.
+ */
+export const SECRET_SETTING_KEYS = new Set<string>(['mail.pass']);
 
 export const LANDING_KEY = 'landing';
 
@@ -46,13 +55,23 @@ const DEFAULT_SETTINGS: SeedSetting[] = [
   { key: 'brandColors', value: BRAND.colors, isPublic: true, group: 'branding' },
 ];
 
+/** Separa un "Nombre <email@dominio>" en nombre y dirección. */
+function parseMailFrom(from: string): { name: string; address: string } {
+  const match = from.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (match) return { name: match[1] || 'Stream Music', address: match[2].trim() };
+  return { name: 'Stream Music', address: from.trim() };
+}
+
 /** Configuración respaldada en base de datos, con caché en memoria. */
 @Injectable()
 export class SettingsService implements OnModuleInit {
   private cache = new Map<string, unknown>();
   private publicCache: Record<string, unknown> | null = null;
 
-  constructor(@InjectModel(Setting.name) private readonly model: Model<SettingDocument>) {}
+  constructor(
+    @InjectModel(Setting.name) private readonly model: Model<SettingDocument>,
+    private readonly config: ConfigService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     for (const s of DEFAULT_SETTINGS) {
@@ -62,7 +81,38 @@ export class SettingsService implements OnModuleInit {
       // para que settings sembrados con un grupo viejo queden en su sección actual.
       else await this.model.updateOne({ key: s.key }, { $set: { group: s.group, isPublic: s.isPublic } }).exec();
     }
+    await this.seedEmailDefaults();
     await this.refreshCache();
+  }
+
+  /** Clave base para cifrar secretos en reposo (derivada del secreto de JWT). */
+  private get cryptoSecret(): string {
+    return this.config.get<{ accessSecret: string }>('jwt')?.accessSecret ?? 'dev-settings-secret';
+  }
+
+  /**
+   * Siembra los settings de email (grupo privado `email`) tomando los valores
+   * actuales del `.env` como defaults, sólo si aún no existen. Así el panel
+   * aparece pre-cargado con lo que ya estaba configurado por variables de entorno.
+   */
+  private async seedEmailDefaults(): Promise<void> {
+    const mail = this.config.get<MailConfig>('mail');
+    const parsed = parseMailFrom(mail?.from ?? 'Stream Music <no-reply@streammusic.local>');
+    const defaults: SeedSetting[] = [
+      { key: 'mail.transport', value: 'smtp', isPublic: false, group: 'email' },
+      { key: 'mail.host', value: mail?.host ?? '', isPublic: false, group: 'email' },
+      { key: 'mail.port', value: mail?.port ?? 587, isPublic: false, group: 'email' },
+      { key: 'mail.secure', value: false, isPublic: false, group: 'email' },
+      { key: 'mail.user', value: '', isPublic: false, group: 'email' },
+      { key: 'mail.pass', value: '', isPublic: false, group: 'email' },
+      { key: 'mail.fromName', value: parsed.name, isPublic: false, group: 'email' },
+      { key: 'mail.fromAddress', value: parsed.address, isPublic: false, group: 'email' },
+    ];
+    for (const s of defaults) {
+      const exists = await this.model.exists({ key: s.key });
+      if (!exists) await this.model.create(s);
+      else await this.model.updateOne({ key: s.key }, { $set: { group: s.group, isPublic: s.isPublic } }).exec();
+    }
   }
 
   private async refreshCache(): Promise<void> {
@@ -72,11 +122,30 @@ export class SettingsService implements OnModuleInit {
   }
 
   async get<T = unknown>(key: string, fallback: T): Promise<T> {
-    if (this.cache.has(key)) return (this.cache.get(key) as T) ?? fallback;
+    let raw: unknown;
+    if (this.cache.has(key)) raw = this.cache.get(key);
+    else {
+      const doc = await this.model.findOne({ key }).lean().exec();
+      if (doc) {
+        raw = doc.value;
+        this.cache.set(key, doc.value);
+      }
+    }
+    if (raw === undefined || raw === null) return fallback;
+    if (SECRET_SETTING_KEYS.has(key) && isEncrypted(raw)) {
+      return (decryptSecret(raw, this.cryptoSecret) as unknown as T) ?? fallback;
+    }
+    return (raw as T) ?? fallback;
+  }
+
+  /** ¿Hay un valor secreto no vacío guardado para esta clave? (sin exponerlo). */
+  async hasSecret(key: string): Promise<boolean> {
+    if (this.cache.has(key)) {
+      const v = this.cache.get(key);
+      return typeof v === 'string' && v !== '';
+    }
     const doc = await this.model.findOne({ key }).lean().exec();
-    const value = (doc?.value as T) ?? fallback;
-    if (doc) this.cache.set(key, doc.value);
-    return value;
+    return Boolean(doc && typeof doc.value === 'string' && doc.value !== '');
   }
 
   /** Lee un setting booleano (acepta valores sembrados como string). */
@@ -100,13 +169,22 @@ export class SettingsService implements OnModuleInit {
     return this.publicCache ?? {};
   }
 
-  /** Todos los settings (admin). */
+  /** Todos los settings (admin). Los secretos se devuelven redactados (valor vacío). */
   async getAll() {
-    return this.model.find().sort({ group: 1, key: 1 }).lean().exec();
+    const docs = await this.model.find().sort({ group: 1, key: 1 }).lean().exec();
+    return docs.map((d) => (SECRET_SETTING_KEYS.has(d.key) ? { ...d, value: '' } : d));
+  }
+
+  /** Cifra el valor si la clave es secreta y el valor es un string no vacío. */
+  private encodeForStore(key: string, value: unknown): unknown {
+    if (SECRET_SETTING_KEYS.has(key) && typeof value === 'string' && value !== '') {
+      return encryptSecret(value, this.cryptoSecret);
+    }
+    return value;
   }
 
   async set<T = unknown>(key: string, value: T, meta?: { isPublic?: boolean; group?: string }): Promise<T> {
-    const update: Record<string, unknown> = { value };
+    const update: Record<string, unknown> = { value: this.encodeForStore(key, value) };
     if (meta?.isPublic !== undefined) update.isPublic = meta.isPublic;
     if (meta?.group !== undefined) update.group = meta.group;
     await this.model.updateOne({ key }, { $set: update }, { upsert: true }).exec();
@@ -117,7 +195,9 @@ export class SettingsService implements OnModuleInit {
   /** Edición en lote por admin. */
   async setMany(entries: { key: string; value: unknown }[]): Promise<number> {
     for (const e of entries) {
-      await this.model.updateOne({ key: e.key }, { $set: { value: e.value } }, { upsert: true }).exec();
+      await this.model
+        .updateOne({ key: e.key }, { $set: { value: this.encodeForStore(e.key, e.value) } }, { upsert: true })
+        .exec();
     }
     await this.refreshCache();
     return entries.length;

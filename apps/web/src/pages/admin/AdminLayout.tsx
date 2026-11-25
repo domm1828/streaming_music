@@ -9,6 +9,7 @@ const LINKS = [
   { to: '/admin/tags', label: 'Tags' },
   { to: '/admin/import', label: 'Importar' },
   { to: '/admin/settings', label: 'Ajustes' },
+  { to: '/admin/email', label: 'Email' },
   { to: '/admin/appearance', label: 'Apariencia' },
   { to: '/admin/localizations', label: 'Idiomas' },
   { to: '/admin/menus', label: 'Menús' },
