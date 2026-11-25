@@ -50,6 +50,7 @@ export class BootstrapController {
           hideLyrics: publicSettings['player.hideLyrics'] === true,
           hideQueue: publicSettings['player.hideQueue'] === true,
           hideFullscreen: publicSettings['player.hideFullscreen'] === true,
+          continuousPlay: publicSettings['player.continuousPlay'] !== false,
         },
       },
       menus: {

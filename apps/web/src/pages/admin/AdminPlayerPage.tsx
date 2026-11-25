@@ -7,6 +7,11 @@ const TOGGLES: { key: string; label: string; description: string; invert?: boole
     label: 'Botón de descarga',
     description: 'Mostrar el botón para descargar pistas de audio.',
   },
+  {
+    key: 'player.continuousPlay',
+    label: 'Reproducción continua',
+    description: 'Al terminar la cola, encola automáticamente pistas relacionadas.',
+  },
   { key: 'player.hideLyrics', label: 'Ocultar letras', description: 'Esconde el botón de letras en el reproductor.', invert: true },
   { key: 'player.hideQueue', label: 'Ocultar cola', description: 'Esconde el botón del panel de cola.', invert: true },
   {
