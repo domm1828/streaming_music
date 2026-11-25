@@ -5,6 +5,7 @@ import { usePlayerStore } from '../features/player/player-store';
 import { LikeButton } from '../features/social/LikeButton';
 import { ShareButton } from '../features/social/ShareButton';
 import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
+import { OfflineButton } from '../features/offline/OfflineButton';
 import { TrackList } from '../features/catalog/TrackList';
 import { MediaHeader, PlayButton, SectionHeader, pillClass } from '../components/media';
 import { useSimilarTracks } from '../features/discovery/discovery-queries';
@@ -51,6 +52,7 @@ export function TrackPage() {
             <LikeButton type="track" id={data._id} label />
             <AddToPlaylist trackId={data._id} />
             <ShareButton path={`/track/${data._id}`} title={data.name} embedPath={`/embed/track/${data._id}`} />
+            <OfflineButton track={data} />
             <Link
               to={`/radio?seedType=track&seedId=${data._id}&label=${encodeURIComponent(data.name)}`}
               className={pillClass()}
