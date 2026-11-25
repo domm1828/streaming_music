@@ -1,16 +1,21 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { KeyRound, LogOut, Monitor } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { KeyRound, Link2, LogOut, Monitor } from 'lucide-react';
 import {
+  connectSocial,
   useApiTokens,
   useChangePassword,
   useCreateApiToken,
   useDeleteAccount,
+  useDisconnectSocial,
   useLogout,
   useRevokeApiToken,
   useRevokeOtherSessions,
   useRevokeSession,
   useSessions,
+  useSocialConnections,
+  useSocialProviders,
+  type SocialProviderName,
 } from '../features/auth/auth-queries';
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '../features/notifications/notification-queries';
 import { LanguageSelector } from '../features/i18n/LanguageSelector';
@@ -237,6 +242,69 @@ function ApiTokens() {
   );
 }
 
+const SOCIAL_LABELS: Record<SocialProviderName, string> = {
+  google: 'Google',
+  facebook: 'Facebook',
+  twitter: 'Twitter / X',
+};
+const SOCIAL_ORDER: SocialProviderName[] = ['google', 'facebook', 'twitter'];
+
+function SocialConnections() {
+  const connections = useSocialConnections();
+  const providers = useSocialProviders();
+  const disconnect = useDisconnectSocial();
+  const [error, setError] = useState<string | null>(null);
+
+  const linked = new Set(connections.data?.map((c) => c.provider));
+  const available = providers.data ?? { google: false, facebook: false, twitter: false };
+  const visible = SOCIAL_ORDER.filter((p) => available[p] || linked.has(p));
+
+  const onDisconnect = (p: SocialProviderName) => {
+    setError(null);
+    disconnect.mutate(p, {
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg ?? 'No se pudo desconectar.');
+      },
+    });
+  };
+
+  if (visible.length === 0) {
+    return <p className="text-sm text-muted">No hay proveedores sociales configurados.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {visible.map((p) => (
+        <div key={p} className="flex items-center gap-3 rounded-lg bg-surface px-3 py-2 text-sm">
+          <Link2 size={18} className="shrink-0 text-muted" />
+          <span className="flex-1 font-medium">{SOCIAL_LABELS[p]}</span>
+          {linked.has(p) ? (
+            <>
+              <span className="text-xs text-brand-secondary">Conectado</span>
+              <button
+                onClick={() => onDisconnect(p)}
+                disabled={disconnect.isPending}
+                className="rounded-full border border-divider px-3 py-1 text-xs font-medium text-muted hover:border-red-500 hover:text-red-500 disabled:opacity-60"
+              >
+                Desconectar
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => connectSocial(p).catch(() => setError('No se pudo iniciar la conexión.'))}
+              className="rounded-full border border-divider px-3 py-1 text-xs font-medium hover:border-brand-secondary"
+            >
+              Conectar
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NotificationPrefs() {
   const prefs = useNotificationPreferences();
   const update = useUpdateNotificationPreferences();
@@ -267,6 +335,8 @@ export function AccountPage() {
   const { user } = useAuth();
   const logout = useLogout();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const socialResult = searchParams.get('social');
 
   const onLogout = async () => {
     await logout.mutateAsync();
@@ -310,6 +380,12 @@ export function AccountPage() {
 
       <Section title="Cambiar contraseña">
         <ChangePassword />
+      </Section>
+
+      <Section title="Conexiones sociales" description="Vinculá tu cuenta con Google, Facebook o Twitter para iniciar sesión con ellos.">
+        {socialResult === 'connected' && <p className="mb-3 text-sm text-brand-secondary">Cuenta social vinculada.</p>}
+        {socialResult === 'error' && <p className="mb-3 text-sm text-red-500">No se pudo vincular la cuenta social.</p>}
+        <SocialConnections />
       </Section>
 
       <Section title="Sesiones activas" description="Dispositivos donde iniciaste sesión.">
