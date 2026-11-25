@@ -23,6 +23,7 @@ import { BackstageModule } from '../backstage/backstage.module';
 import { BackstageService } from '../backstage/backstage.service';
 import { CommunityModule } from './community.module';
 import { CommentsService } from './comments.service';
+import { ReportsService } from './reports.service';
 
 /** Gateway de tiempo real mockeado: registra las emisiones sin abrir un socket. */
 class FakeGateway {
@@ -39,6 +40,7 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
   let settings: SettingsService;
   let notifications: NotificationsService;
   let comments: CommentsService;
+  let reports: ReportsService;
   let backstage: BackstageService;
   let users: UsersService;
   let userModel: Model<User>;
@@ -78,6 +80,7 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
     settings = moduleRef.get(SettingsService);
     notifications = moduleRef.get(NotificationsService);
     comments = moduleRef.get(CommentsService);
+    reports = moduleRef.get(ReportsService);
     backstage = moduleRef.get(BackstageService);
     users = moduleRef.get(UsersService);
     userModel = moduleRef.get<Model<User>>(getModelToken(User.name));
@@ -128,6 +131,32 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       const after = await notifications.list(userId, 1, 20);
       expect(after.data.find((n) => String(n._id) === String(first._id))?.readAt).toBeTruthy();
     });
+
+    it('broadcast: cuenta la audiencia y entrega a cada usuario activo', async () => {
+      const all = await notifications.countAudience({ kind: 'all' });
+      expect(all).toBeGreaterThanOrEqual(2); // user + admin
+
+      const res = await notifications.broadcast({
+        title: 'Aviso general',
+        body: 'Para todos',
+        audience: { kind: 'all' },
+      });
+      expect(res.sent).toBe(all);
+
+      // cada usuario recibió su propia notificación de broadcast
+      const mine = await notifications.list(userId, 1, 50);
+      expect(mine.data.some((n) => n.type === 'admin.broadcast' && n.title === 'Aviso general')).toBe(true);
+    });
+
+    it('broadcast: audiencia por usuarios puntuales solo alcanza a los elegidos', async () => {
+      const res = await notifications.broadcast({
+        title: 'Solo a uno',
+        audience: { kind: 'users', userIds: [userId] },
+      });
+      expect(res.sent).toBe(1);
+      const adminList = await notifications.list(adminId, 1, 50);
+      expect(adminList.data.some((n) => n.title === 'Solo a uno')).toBe(false);
+    });
   });
 
   describe('Comentarios y votos', () => {
@@ -146,6 +175,49 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       await comments.hide(String(reply._id));
       const after = await comments.listForContent('artist', trackId, 1, 20);
       expect(after.data.length).toBe(1); // el oculto no aparece
+    });
+
+    it('respeta el ajuste commentsEnabled', async () => {
+      const artId = String((await artistModel.create({ name: 'T2', slug: 't2-' + Date.now() }))._id);
+      await settings.set('commentsEnabled', false);
+      await expect(comments.create(userId, 'artist', artId, 'bloqueado')).rejects.toThrow();
+      await settings.set('commentsEnabled', true);
+      const ok = await comments.create(userId, 'artist', artId, 'permitido');
+      expect(ok._id).toBeTruthy();
+    });
+  });
+
+  describe('Reportes y moderación', () => {
+    it('resuelve un reporte de comentario ocultando el contenido y lo previsualiza', async () => {
+      const artId = String((await artistModel.create({ name: 'TR', slug: 'tr-' + Date.now() }))._id);
+      const comment = await comments.create(userId, 'artist', artId, 'comentario reportado');
+      const report = await reports.create(adminId, 'comment', String(comment._id), 'spam');
+
+      // El listado trae un preview legible del contenido reportado.
+      const open = await reports.list('open', 1, 50);
+      const row = open.data.find((r) => String(r._id) === String(report._id));
+      expect(row?.preview?.exists).toBe(true);
+      expect(row?.preview?.label).toContain('comentario reportado');
+      expect(row?.preview?.hidden).toBe(false);
+
+      // Resolver con action=hide oculta el comentario y marca resuelto.
+      const resolved = await reports.resolve(String(report._id), adminId, 'resolved', 'spam confirmado', 'hide');
+      expect(resolved.status).toBe('resolved');
+      expect(resolved.resolution).toBe('spam confirmado');
+
+      const visible = await comments.listForContent('artist', artId, 1, 20);
+      expect(visible.data.some((c) => String(c._id) === String(comment._id))).toBe(false);
+
+      // Y el preview ahora lo marca como oculto.
+      const after = await reports.list('resolved', 1, 50);
+      const afterRow = after.data.find((r) => String(r._id) === String(report._id));
+      expect(afterRow?.preview?.hidden).toBe(true);
+    });
+
+    it('resuelve aunque el contenido reportado ya no exista', async () => {
+      const report = await reports.create(adminId, 'comment', String(adminId), 'inexistente');
+      const resolved = await reports.resolve(String(report._id), adminId, 'dismissed', undefined, 'hide');
+      expect(resolved.status).toBe('dismissed');
     });
   });
 
@@ -171,6 +243,24 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       const req = await backstage.submit(userId, { type: 'new', artistName: 'Otra' }, []);
       const rejected = await backstage.reject(String(req._id), adminId, 'faltan datos');
       expect(rejected.status).toBe('rejected');
+    });
+
+    it('expone los adjuntos con URL firmada y respeta el acceso', async () => {
+      const req = await backstage.submit(userId, { type: 'new', artistName: 'Con Evidencia' }, [
+        { buffer: Buffer.from('prueba'), originalname: 'contrato.pdf', mimetype: 'application/pdf' },
+      ]);
+      const urls = await backstage.attachmentUrls(String(req._id), { id: adminId, isAdmin: true });
+      expect(urls).toHaveLength(1);
+      expect(urls[0].filename).toBe('contrato.pdf');
+      expect(urls[0].url).toContain('files/signed');
+
+      // El dueño puede; un tercero sin admin, no.
+      await expect(
+        backstage.attachmentUrls(String(req._id), { id: userId, isAdmin: false }),
+      ).resolves.toBeDefined();
+      await expect(
+        backstage.attachmentUrls(String(req._id), { id: adminId, isAdmin: false }),
+      ).rejects.toBeTruthy();
     });
   });
 });

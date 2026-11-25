@@ -60,6 +60,19 @@ export class ArtistsService {
     return artist;
   }
 
+  /** Detalle para el panel admin: géneros y similares poblados, sin incrementar views. */
+  async findForEdit(id: string): Promise<ArtistDocument> {
+    const artist = Types.ObjectId.isValid(id)
+      ? await this.model
+          .findById(id)
+          .populate('genres')
+          .populate('similar', 'name slug image')
+          .exec()
+      : null;
+    if (!artist) throw new NotFoundException('Artista no encontrado');
+    return artist;
+  }
+
   async albums(artistId: string, page: number, perPage: number) {
     const filter = { artists: new Types.ObjectId(artistId) };
     const [data, total] = await Promise.all([

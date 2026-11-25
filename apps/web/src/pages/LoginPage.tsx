@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { AuthCard, Button, FormError, TextField } from '../components/ui';
 import { isTwoFactorRequired, useLogin } from '../features/auth/auth-queries';
+import { SocialButtons } from '../features/auth/SocialButtons';
 import { applyApiErrors, getApiErrorMessage } from '../lib/api-error';
 
 interface LoginForm {
@@ -71,15 +72,7 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="my-4 flex items-center gap-3 text-xs opacity-50">
-        <span className="h-px flex-1 bg-brand-secondary/30" /> o <span className="h-px flex-1 bg-brand-secondary/30" />
-      </div>
-      <a
-        href="/api/v1/auth/social/google"
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-brand-secondary/30 px-4 py-2.5 font-medium hover:border-brand-secondary/60"
-      >
-        Continuar con Google
-      </a>
+      <SocialButtons />
 
       <div className="mt-4 flex justify-between text-sm">
         <Link to="/forgot-password" className="text-brand-secondary hover:underline">

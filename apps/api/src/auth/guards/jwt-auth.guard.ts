@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-/** Exige un access token JWT válido. */
+/** Exige un access token JWT válido o un token de acceso personal (API). */
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {}
+export class JwtAuthGuard extends AuthGuard(['jwt', 'api-token']) {}

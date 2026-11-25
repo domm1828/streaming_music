@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
+import { getOfflineBlob } from '../offline/offline-db';
 import { currentTrack, usePlayerStore } from './player-store';
 import { logPlay } from './use-log-play';
 import { YouTubeProvider } from './YouTubeProvider';
@@ -18,6 +19,7 @@ export function PlayerEngine() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const loadedIdRef = useRef<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   const isYoutube = track?.srcType === 'youtube';
 
@@ -31,24 +33,54 @@ export function PlayerEngine() {
     hlsRef.current?.destroy();
     hlsRef.current = null;
 
+    const revokeObjectUrl = () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+
     const isHls = track.srcType === 'hls' || track.src.endsWith('.m3u8');
     if (isHls && Hls.isSupported()) {
+      revokeObjectUrl();
       const hls = new Hls();
       hls.loadSource(track.src);
       hls.attachMedia(audio);
       hlsRef.current = hls;
+      logPlay(track._id);
+      if (usePlayerStore.getState().isPlaying) void audio.play().catch(() => undefined);
     } else {
-      audio.src = track.src;
-      audio.load();
+      // Audio: preferir una copia offline (blob) si existe; si no, la red.
+      const trackId = track._id;
+      const networkSrc = track.src;
+      void getOfflineBlob(trackId).then((blob) => {
+        if (loadedIdRef.current !== trackId || !audioRef.current) return;
+        revokeObjectUrl();
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          objectUrlRef.current = url;
+          audioRef.current.src = url;
+        } else {
+          audioRef.current.src = networkSrc;
+        }
+        audioRef.current.load();
+        logPlay(trackId);
+        if (usePlayerStore.getState().isPlaying) void audioRef.current.play().catch(() => undefined);
+      });
     }
-    logPlay(track._id);
-    if (usePlayerStore.getState().isPlaying) void audio.play().catch(() => undefined);
 
     return () => {
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
   }, [track, isYoutube]);
+
+  // Revocar el object URL offline al desmontar.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    };
+  }, []);
 
   // Play / pause.
   useEffect(() => {
@@ -70,6 +102,71 @@ export function PlayerEngine() {
     audio.currentTime = pendingSeek;
     usePlayerStore.getState().consumeSeek();
   }, [pendingSeek, isYoutube]);
+
+  // Media Session API: metadata + controles del sistema operativo.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    if (!track) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    const artwork = track.image ?? track.album?.image ?? null;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.name,
+      artist: track.artists?.map((a) => a.artist.name).join(', ') ?? '',
+      album: track.album?.name ?? '',
+      artwork: artwork ? [{ src: artwork, sizes: '512x512' }] : [],
+    });
+    const s = usePlayerStore.getState();
+    navigator.mediaSession.setActionHandler('play', () => s.setPlaying(true));
+    navigator.mediaSession.setActionHandler('pause', () => s.setPlaying(false));
+    navigator.mediaSession.setActionHandler('previoustrack', () => usePlayerStore.getState().prev());
+    navigator.mediaSession.setActionHandler('nexttrack', () => usePlayerStore.getState().next());
+    navigator.mediaSession.setActionHandler('seekto', (e) => {
+      if (typeof e.seekTime === 'number') usePlayerStore.getState().seekTo(e.seekTime);
+    });
+  }, [track]);
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
+
+  // Atajos de teclado globales (ignorados al escribir en inputs).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      const s = usePlayerStore.getState();
+      if (s.index < 0) return;
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          s.togglePlay();
+          break;
+        case 'ArrowRight':
+          if (e.shiftKey) s.next();
+          else s.seekTo(Math.min(s.duration || Infinity, s.currentTime + 5));
+          break;
+        case 'ArrowLeft':
+          if (e.shiftKey) s.prev();
+          else s.seekTo(Math.max(0, s.currentTime - 5));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          s.setVolume(s.volume + 0.1);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          s.setVolume(s.volume - 0.1);
+          break;
+        case 'm':
+          s.setVolume(s.volume > 0 ? 0 : 0.8);
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const { setProgress, next } = usePlayerStore.getState();
 

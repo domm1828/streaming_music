@@ -9,7 +9,6 @@ import { Server as TusServer } from '@tus/server';
 import { FileStore } from '@tus/file-store';
 import { AppModule } from './app.module';
 import type { AppConfig } from './config/configuration';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { initSentry } from './observability/sentry';
 
@@ -50,7 +49,7 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.useGlobalFilters(new AllExceptionsFilter());
+  // AllExceptionsFilter se registra vía APP_FILTER (DI) en AppModule para loguear errores.
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   const port = config.get<number>('app.port') ?? 3000;

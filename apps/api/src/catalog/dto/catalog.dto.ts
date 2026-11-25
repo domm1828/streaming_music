@@ -43,6 +43,38 @@ export class UpdateGenreDto {
   image?: string;
 }
 
+export class CreateTagDto {
+  @IsString()
+  @IsNotEmpty()
+  displayName!: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class UpdateTagDto {
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
 export class CreateArtistDto {
   @IsString()
   @IsNotEmpty()
@@ -83,6 +115,11 @@ export class UpdateArtistDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  similar?: string[];
 }
 
 export class CreateAlbumDto {
@@ -141,6 +178,12 @@ export class UpdateAlbumDto {
   genres?: string[];
 }
 
+export class AlbumTracksOrderDto {
+  @IsArray()
+  @IsMongoId({ each: true })
+  trackIds!: string[];
+}
+
 export class CreateTrackDto {
   @IsString()
   @IsNotEmpty()
@@ -165,6 +208,10 @@ export class CreateTrackDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsString()
+  @IsOptional()
+  image?: string;
 
   /** Para pistas externas (youtube/hls): id de YouTube o URL. */
   @IsString()
@@ -200,6 +247,15 @@ export class UpdateTrackDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  tags?: string[];
+
+  @IsString()
+  @IsOptional()
+  image?: string;
 }
 
 export class UpsertLyricDto {

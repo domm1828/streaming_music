@@ -88,6 +88,13 @@ export class BackstageController {
     return this.service.listAll(query.status, query.page, query.perPage);
   }
 
+  @Get('admin/backstage/:id/attachments')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.CONTENT_MANAGE)
+  attachments(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.attachmentUrls(id, { id: user.id, isAdmin: true });
+  }
+
   @Post('admin/backstage/:id/approve')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions(PERMISSIONS.CONTENT_MANAGE)

@@ -3,6 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 import { Album } from './album.schema';
 import { Artist } from './artist.schema';
 import { Genre } from './genre.schema';
+import { Tag } from './tag.schema';
 import { User } from '../../users/schemas/user.schema';
 
 export type TrackDocument = HydratedDocument<Track>;
@@ -63,6 +64,9 @@ export class Track {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: Genre.name }], default: [] })
   genres!: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: Tag.name }], default: [], index: true })
+  tags!: Types.ObjectId[];
 
   /** Vector de embedding para búsqueda/recomendación semántica (Phase 8). */
   @Prop({ type: [Number], default: undefined, select: false })

@@ -27,5 +27,6 @@ export interface BootstrapData {
   menus: {
     primary: { label: string; path: string; auth?: boolean }[];
   };
+  i18n: { locale: string; lines: Record<string, string> };
   user: AuthUser | null;
 }

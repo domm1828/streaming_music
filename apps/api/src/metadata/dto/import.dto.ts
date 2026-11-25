@@ -16,3 +16,10 @@ export class ProviderSearchDto {
   @IsNotEmpty()
   q!: string;
 }
+
+export class ImportYoutubeDto {
+  /** URL de YouTube (o id de video). */
+  @IsString()
+  @IsNotEmpty()
+  url!: string;
+}

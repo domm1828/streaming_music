@@ -67,6 +67,16 @@ export function useAddTracks(id: string) {
   });
 }
 
+/** Agrega una pista a cualquier playlist (para menús contextuales). */
+export function useAddTrackToPlaylist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ playlistId, trackId }: { playlistId: string; trackId: string }) =>
+      mutate<PlaylistDetail>('post', `playlists/${playlistId}/tracks`, { trackIds: [trackId] }),
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['playlist', v.playlistId] }),
+  });
+}
+
 export function useRemoveTrack(id: string) {
   const qc = useQueryClient();
   return useMutation({

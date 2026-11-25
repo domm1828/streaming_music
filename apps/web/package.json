@@ -1,6 +1,6 @@
 {
   "name": "@stream-music/web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "axios": "^1.12.0",
     "hls.js": "^1.7.0",
     "immer": "^11.0.0",
+    "lucide-react": "^1.78.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.0.0",

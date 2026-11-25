@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -18,6 +19,8 @@ import { RequirePermissions } from './decorators/require-permissions.decorator';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { PERMISSIONS } from './rbac/permissions';
 import {
+  ChangePasswordDto,
+  DeleteAccountDto,
   ForgotPasswordDto,
   LoginDto,
   RefreshDto,
@@ -101,10 +104,26 @@ export class AuthController {
     return user;
   }
 
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
+    await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+    return { message: 'Contraseña actualizada' };
+  }
+
   @Get('sessions')
   @UseGuards(JwtAuthGuard)
   sessions(@CurrentUser() user: AuthenticatedUser) {
     return this.tokens.listSessions(user.id);
+  }
+
+  @Delete('sessions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async revokeOtherSessions(@CurrentUser() user: AuthenticatedUser, @Body() dto: RefreshDto) {
+    await this.tokens.revokeOthers(user.id, dto.refreshToken);
+    return { message: 'Se cerraron las demás sesiones' };
   }
 
   @Delete('sessions/:id')
@@ -113,6 +132,14 @@ export class AuthController {
   async revokeSession(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     await this.tokens.revokeSession(user.id, id);
     return { message: 'Sesión revocada' };
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(@CurrentUser() user: AuthenticatedUser, @Body() dto: DeleteAccountDto) {
+    await this.authService.deleteAccount(user.id, dto.password);
+    return { message: 'Cuenta eliminada' };
   }
 
   @Post('impersonate/:userId')
