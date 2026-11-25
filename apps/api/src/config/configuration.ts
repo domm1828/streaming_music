@@ -40,6 +40,9 @@ export interface IntegrationsConfig {
   spotifyClientSecret: string;
   lastfmApiKey: string;
   openaiApiKey: string;
+  geminiApiKey: string;
+  /** Proveedor de embeddings preferido: 'openai' | 'gemini'. */
+  embeddingsProvider: string;
   googleClientId: string;
   googleClientSecret: string;
   facebookClientId: string;
@@ -102,6 +105,8 @@ export default (): {
     spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? '',
     lastfmApiKey: process.env.LASTFM_API_KEY ?? '',
     openaiApiKey: process.env.OPENAI_API_KEY ?? '',
+    geminiApiKey: process.env.GEMINI_API_KEY ?? '',
+    embeddingsProvider: process.env.AI_EMBEDDINGS_PROVIDER ?? 'openai',
     googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     facebookClientId: process.env.FACEBOOK_CLIENT_ID ?? '',
