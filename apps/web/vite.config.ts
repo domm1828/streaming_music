@@ -1,9 +1,20 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // El paquete compartido se compila a CommonJS para el API (NestJS); el web lo
+  // resuelve directo desde su fuente TS para que los imports de valor (p. ej. BRAND)
+  // funcionen como ESM en dev y en build.
+  resolve: {
+    alias: {
+      '@stream-music/shared': fileURLToPath(
+        new URL('../../packages/shared/src/index.ts', import.meta.url),
+      ),
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -37,6 +48,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // Permite servir la fuente TS de packages/shared (fuera de apps/web) en dev.
+    fs: { allow: [fileURLToPath(new URL('../../', import.meta.url))] },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

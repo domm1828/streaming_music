@@ -1,31 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IntegrationsConfig } from '../config/configuration';
-import type { OAuthClient } from './oauth-provider';
+import { SettingsService } from '../settings/settings.service';
+import { BaseSocialOAuth } from './oauth-provider';
+import type { SocialProvider } from './schemas/social-profile.schema';
 import type { SocialProfileData } from './social-auth.service';
 
 const GRAPH = 'https://graph.facebook.com/v19.0';
 const AUTH_URL = 'https://www.facebook.com/v19.0/dialog/oauth';
 
-/** Cliente OAuth de Facebook (authorization code). Gracioso si no hay credenciales. */
+/** Cliente OAuth de Facebook (authorization code). Credenciales desde settings/.env. */
 @Injectable()
-export class FacebookOAuthService implements OAuthClient {
-  private readonly clientId: string;
-  private readonly clientSecret: string;
+export class FacebookOAuthService extends BaseSocialOAuth {
+  protected readonly provider: SocialProvider = 'facebook';
 
-  constructor(config: ConfigService) {
-    const cfg = config.get<IntegrationsConfig>('integrations');
-    this.clientId = cfg?.facebookClientId ?? '';
-    this.clientSecret = cfg?.facebookClientSecret ?? '';
+  constructor(config: ConfigService, settings: SettingsService) {
+    super(config, settings);
   }
 
-  isConfigured(): boolean {
-    return Boolean(this.clientId && this.clientSecret);
+  protected envCreds(): { id: string; secret: string } {
+    const cfg = this.config.get<IntegrationsConfig>('integrations');
+    return { id: cfg?.facebookClientId ?? '', secret: cfg?.facebookClientSecret ?? '' };
   }
 
-  buildAuthorize(redirectUri: string): { url: string } {
+  async buildAuthorize(redirectUri: string): Promise<{ url: string }> {
+    const { id } = await this.resolveCreds();
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: id,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'email,public_profile',
@@ -34,9 +35,10 @@ export class FacebookOAuthService implements OAuthClient {
   }
 
   async exchange(code: string, redirectUri: string): Promise<SocialProfileData> {
+    const { id, secret } = await this.resolveCreds();
     const tokenUrl = `${GRAPH}/oauth/access_token?${new URLSearchParams({
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
+      client_id: id,
+      client_secret: secret,
       redirect_uri: redirectUri,
       code,
     }).toString()}`;
