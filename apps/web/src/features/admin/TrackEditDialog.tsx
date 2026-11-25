@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useDebounce } from '../../lib/use-debounce';
-import { useArtists, useGenres } from '../catalog/catalog-queries';
+import { useArtists, useGenres, useTags } from '../catalog/catalog-queries';
 import {
   useAdminTrack,
   useAlbumSearch,
@@ -20,6 +20,7 @@ interface Ref {
 export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose: () => void }) {
   const { data, isLoading } = useAdminTrack(trackId);
   const genresQuery = useGenres();
+  const tagsQuery = useTags();
   const update = useUpdateTrack();
   const upload = useUploadImage();
   const replaceAudio = useReplaceTrackAudio(trackId);
@@ -30,6 +31,7 @@ export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose
   const [image, setImage] = useState<string | null>(null);
   const [album, setAlbum] = useState<Ref | null>(null);
   const [genreIds, setGenreIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [artists, setArtists] = useState<Ref[]>([]);
   const [artQ, setArtQ] = useState('');
   const [albQ, setAlbQ] = useState('');
@@ -43,12 +45,16 @@ export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose
     setImage(data.image);
     setAlbum(data.album ? { _id: data.album._id, name: data.album.name } : null);
     setGenreIds(data.genres.map((g) => g._id));
+    setTagIds((data.tags ?? []).map((t) => t._id));
     setArtists(data.artists.map((a) => ({ _id: a.artist._id, name: a.artist.name })));
     setSeeded(true);
   }, [data, seeded]);
 
   const toggleGenre = (id: string) =>
     setGenreIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+
+  const toggleTag = (id: string) =>
+    setTagIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
 
   const addArtist = (a: Ref) => {
     if (!artists.some((x) => x._id === a._id)) setArtists((p) => [...p, a]);
@@ -64,6 +70,7 @@ export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose
         album: album?._id,
         artists: artists.map((a) => a._id),
         genres: genreIds,
+        tags: tagIds,
         image: image ?? undefined,
       },
       { onSuccess: onClose },
@@ -213,6 +220,30 @@ export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Tags</label>
+              <div className="flex flex-wrap gap-2">
+                {tagsQuery.data?.map((t) => {
+                  const on = tagIds.includes(t._id);
+                  return (
+                    <button
+                      key={t._id}
+                      type="button"
+                      onClick={() => toggleTag(t._id)}
+                      className={`rounded-full px-3 py-1 text-xs transition ${
+                        on ? 'bg-brand-accent text-black' : 'border border-divider text-muted hover:border-brand-secondary'
+                      }`}
+                    >
+                      {t.displayName}
+                    </button>
+                  );
+                })}
+                {tagsQuery.data && tagsQuery.data.length === 0 && (
+                  <span className="text-xs text-muted">No hay tags. Creá tags en Administración → Tags.</span>
+                )}
               </div>
             </div>
 

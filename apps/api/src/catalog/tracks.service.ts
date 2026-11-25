@@ -101,7 +101,7 @@ export class TracksService {
 
   async findDetail(id: string) {
     if (!Types.ObjectId.isValid(id)) throw new NotFoundException('Pista no encontrada');
-    const track = await this.model.findById(id).populate('artists.artist').populate('album').populate('genres').lean().exec();
+    const track = await this.model.findById(id).populate('artists.artist').populate('album').populate('genres').populate('tags').lean().exec();
     if (!track) throw new NotFoundException('Pista no encontrada');
     const lyric = await this.lyricModel.findOne({ track: track._id }).lean().exec();
     return { ...track, lyric: lyric ?? null };
@@ -169,6 +169,7 @@ export class TracksService {
     if (dto.album !== undefined) track.album = new Types.ObjectId(dto.album);
     if (dto.artists !== undefined) track.artists = this.artistRefs(dto.artists);
     if (dto.genres !== undefined) track.genres = dto.genres.map((g) => new Types.ObjectId(g));
+    if (dto.tags !== undefined) track.tags = dto.tags.map((t) => new Types.ObjectId(t));
     if (dto.image !== undefined) track.image = dto.image;
     await track.save();
     this.emit(track._id, 'upsert');
