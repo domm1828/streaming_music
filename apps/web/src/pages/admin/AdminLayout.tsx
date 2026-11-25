@@ -6,6 +6,7 @@ const LINKS = [
   { to: '/admin/roles', label: 'Roles' },
   { to: '/admin/notifications', label: 'Notificaciones' },
   { to: '/admin/catalog', label: 'Catálogo' },
+  { to: '/admin/tags', label: 'Tags' },
   { to: '/admin/import', label: 'Importar' },
   { to: '/admin/settings', label: 'Ajustes' },
   { to: '/admin/menus', label: 'Menús' },

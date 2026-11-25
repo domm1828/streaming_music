@@ -66,6 +66,21 @@ export function TrackPage() {
         }
       />
 
+      {data.tags && data.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {data.tags.map((t) => (
+            <Link
+              key={t._id}
+              to={`/tag/${t._id}`}
+              className="rounded-full border border-divider px-3 py-1 text-xs text-muted transition hover:border-brand-secondary hover:text-main"
+              style={t.color ? { borderColor: t.color, color: t.color } : undefined}
+            >
+              {t.displayName}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {data.lyric ? (
         <section className="max-w-2xl rounded-panel bg-chip p-6">
           <h2 className="mb-3 text-lg font-semibold">Letra</h2>

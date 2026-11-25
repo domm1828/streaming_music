@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiResponse } from '@stream-music/shared';
 import { apiClient } from '../../lib/api-client';
 import { getList, getOne, mutate } from '../../lib/http';
-import type { Album, Artist, Genre, Paginated, Track } from '../catalog/types';
+import type { Album, Artist, Genre, Paginated, Tag, Track } from '../catalog/types';
 
 export type ChannelSourceType =
   | 'topTracks'
@@ -196,6 +196,7 @@ export interface AdminTrackDetail {
   album: { _id: string; name: string } | null;
   artists: { artist: ArtistRef; primary?: boolean }[];
   genres: Genre[];
+  tags: Tag[];
 }
 export function useAdminTracks(search: string, page: number) {
   return useQuery<Paginated<Track>>({
@@ -223,6 +224,7 @@ export function useUpdateTrack() {
       album?: string;
       artists?: string[];
       genres?: string[];
+      tags?: string[];
       image?: string;
     }) => mutate<Track>('patch', `tracks/${id}`, dto),
     onSuccess: (_d, v) => {
@@ -335,6 +337,44 @@ export function useDeleteGenre() {
   return useMutation({
     mutationFn: (id: string) => mutate('delete', `genres/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-genres'] }),
+  });
+}
+
+// --- Tags ---
+export interface TagStats {
+  _id: string;
+  name: string;
+  displayName: string;
+  color: string | null;
+  description: string | null;
+  tracksCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export function useAdminTags() {
+  return useQuery({ queryKey: ['admin-tags'], queryFn: () => getOne<TagStats[]>('tags/with-stats') });
+}
+export function useCreateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { displayName: string; color?: string; description?: string }) =>
+      mutate<Tag>('post', 'tags', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-tags'] }),
+  });
+}
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...dto }: { id: string; displayName?: string; color?: string; description?: string }) =>
+      mutate<Tag>('patch', `tags/${id}`, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-tags'] }),
+  });
+}
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => mutate('delete', `tags/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-tags'] }),
   });
 }
 

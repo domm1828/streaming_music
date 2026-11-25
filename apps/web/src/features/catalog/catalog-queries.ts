@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ApiResponse } from '@stream-music/shared';
 import { apiClient } from '../../lib/api-client';
-import type { Album, Artist, Genre, GenreOverview, Paginated, Track } from './types';
+import type { Album, Artist, Genre, GenreOverview, Paginated, Tag, TagOverview, Track } from './types';
 
 async function getOne<T>(url: string): Promise<T> {
   const { data } = await apiClient.get<ApiResponse<T>>(url);
@@ -20,6 +20,17 @@ export function useGenreOverview(id: string) {
   return useQuery({
     queryKey: ['genre', id, 'overview'],
     queryFn: () => getOne<GenreOverview>(`genres/${id}/overview`),
+  });
+}
+
+export function useTags() {
+  return useQuery({ queryKey: ['tags'], queryFn: () => getOne<Tag[]>('tags') });
+}
+
+export function useTagOverview(id: string) {
+  return useQuery({
+    queryKey: ['tag', id, 'overview'],
+    queryFn: () => getOne<TagOverview>(`tags/${id}/overview`),
   });
 }
 

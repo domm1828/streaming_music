@@ -43,6 +43,38 @@ export class UpdateGenreDto {
   image?: string;
 }
 
+export class CreateTagDto {
+  @IsString()
+  @IsNotEmpty()
+  displayName!: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class UpdateTagDto {
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
 export class CreateArtistDto {
   @IsString()
   @IsNotEmpty()
@@ -215,6 +247,11 @@ export class UpdateTrackDto {
   @IsMongoId({ each: true })
   @IsOptional()
   genres?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  tags?: string[];
 
   @IsString()
   @IsOptional()

@@ -6,6 +6,8 @@ import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { TrackPage } from './pages/TrackPage';
 import { GenrePage } from './pages/GenrePage';
+import { TagPage } from './pages/TagPage';
+import { AdminTagsPage } from './pages/admin/AdminTagsPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { PlaylistPage } from './pages/PlaylistPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -52,6 +54,7 @@ export const router = createBrowserRouter([
       { path: '/album/:id', element: <AlbumPage /> },
       { path: '/track/:id', element: <TrackPage /> },
       { path: '/genre/:id', element: <GenrePage /> },
+      { path: '/tag/:id', element: <TagPage /> },
       { path: '/playlist/:id', element: <PlaylistPage /> },
       { path: '/u/:username', element: <ProfilePage /> },
       {
@@ -109,6 +112,7 @@ export const router = createBrowserRouter([
           { path: 'roles', element: <AdminRolesPage /> },
           { path: 'notifications', element: <AdminNotificationsPage /> },
           { path: 'catalog', element: <AdminCatalogPage /> },
+          { path: 'tags', element: <AdminTagsPage /> },
           { path: 'import', element: <AdminImportPage /> },
           { path: 'settings', element: <AdminSettingsPage /> },
           { path: 'moderation', element: <AdminModerationPage /> },

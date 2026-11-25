@@ -19,9 +19,18 @@ export interface Genre {
   displayName: string;
 }
 
+export interface Tag {
+  _id: string;
+  name: string;
+  displayName: string;
+  color?: string | null;
+  description?: string | null;
+}
+
 export interface Track extends PlayerTrack {
   number: number;
   lyric?: { text: string; isSynced: boolean } | null;
+  tags?: Tag[];
 }
 
 export interface Album {
@@ -45,4 +54,9 @@ export interface GenreOverview {
   artists: Artist[];
   albums: Album[];
   topTracks: Track[];
+}
+
+export interface TagOverview {
+  tag: Tag;
+  tracks: Track[];
 }
