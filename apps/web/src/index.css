@@ -104,3 +104,9 @@ body {
     transform: scaleY(0.7);
   }
 }
+
+/* El iframe de YouTube llena su contenedor (video en el overlay). */
+.sm-yt iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
