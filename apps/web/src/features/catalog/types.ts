@@ -39,3 +39,10 @@ export interface Artist extends ArtistRef {
   genres?: Genre[];
   views?: number;
 }
+
+export interface GenreOverview {
+  genre: Genre & { image?: string | null };
+  artists: Artist[];
+  albums: Album[];
+  topTracks: Track[];
+}

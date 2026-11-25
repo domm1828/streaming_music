@@ -22,6 +22,11 @@ export class GenresController {
     return this.service.findAllWithStats();
   }
 
+  @Get(':id/overview')
+  overview(@Param('id') id: string) {
+    return this.service.overview(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findByIdOrFail(id);

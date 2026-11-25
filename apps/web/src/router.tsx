@@ -5,6 +5,7 @@ import { BrowsePage } from './pages/BrowsePage';
 import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { TrackPage } from './pages/TrackPage';
+import { GenrePage } from './pages/GenrePage';
 import { LibraryPage } from './pages/LibraryPage';
 import { PlaylistPage } from './pages/PlaylistPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
       { path: '/artist/:id', element: <ArtistPage /> },
       { path: '/album/:id', element: <AlbumPage /> },
       { path: '/track/:id', element: <TrackPage /> },
+      { path: '/genre/:id', element: <GenrePage /> },
       { path: '/playlist/:id', element: <PlaylistPage /> },
       { path: '/u/:username', element: <ProfilePage /> },
       {

@@ -38,7 +38,20 @@ export function ArtistPage() {
         shape="round"
         kicker="Artista"
         title={artist.data.name}
-        meta={artist.data.genres && artist.data.genres.length > 0 ? artist.data.genres.map((g) => g.displayName).join(' · ') : undefined}
+        meta={
+          artist.data.genres && artist.data.genres.length > 0 ? (
+            <span className="flex flex-wrap gap-x-1.5 gap-y-1">
+              {artist.data.genres.map((g, i) => (
+                <span key={g._id}>
+                  <Link to={`/genre/${g._id}`} className="hover:text-main hover:underline">
+                    {g.displayName}
+                  </Link>
+                  {i < artist.data!.genres!.length - 1 && <span className="text-muted"> · </span>}
+                </span>
+              ))}
+            </span>
+          ) : undefined
+        }
         actions={
           <>
             <PlayButton
