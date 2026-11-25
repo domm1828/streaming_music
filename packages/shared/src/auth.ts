@@ -22,6 +22,7 @@ export interface PlayerSettings {
   hideLyrics: boolean;
   hideQueue: boolean;
   hideFullscreen: boolean;
+  continuousPlay: boolean;
 }
 
 export interface BootstrapData {

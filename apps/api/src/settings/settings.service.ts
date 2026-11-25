@@ -69,6 +69,7 @@ const DEFAULT_SETTINGS: SeedSetting[] = [
   { key: 'player.hideLyrics', value: false, isPublic: true, group: 'player' },
   { key: 'player.hideQueue', value: false, isPublic: true, group: 'player' },
   { key: 'player.hideFullscreen', value: false, isPublic: true, group: 'player' },
+  { key: 'player.continuousPlay', value: true, isPublic: true, group: 'player' },
 ];
 
 /** Separa un "Nombre <email@dominio>" en nombre y dirección. */

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router';
 import { useRadioAutoExtend } from '../discovery/use-radio-autoextend';
+import { useContinuousPlay } from '../discovery/use-continuous-play';
 import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 import { QueuePanel } from './QueuePanel';
@@ -12,6 +13,7 @@ import { Topbar } from './Topbar';
 /** Shell principal: sidebar + topbar + contenido + panel de cola/letra + barra de reproductor. */
 export function WebPlayerLayout() {
   useRadioAutoExtend();
+  useContinuousPlay();
   const [queueOpen, setQueueOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
