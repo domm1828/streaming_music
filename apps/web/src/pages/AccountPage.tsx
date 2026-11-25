@@ -17,7 +17,11 @@ import {
   useSocialProviders,
   type SocialProviderName,
 } from '../features/auth/auth-queries';
-import { useNotificationPreferences, useUpdateNotificationPreferences } from '../features/notifications/notification-queries';
+import {
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+  type NotificationCategory,
+} from '../features/notifications/notification-queries';
 import { LanguageSelector } from '../features/i18n/LanguageSelector';
 import { useAuth } from '../features/auth/use-auth';
 import { TwoFactorSettings } from '../features/auth/TwoFactorSettings';
@@ -305,20 +309,47 @@ function SocialConnections() {
   );
 }
 
+const NOTIF_CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  social: 'Social (seguidores, comentarios, reposts)',
+  backstage: 'Backstage (tus solicitudes de artista)',
+  announcements: 'Anuncios del sitio',
+};
+const NOTIF_CATEGORY_ORDER: NotificationCategory[] = ['social', 'backstage', 'announcements'];
+
 function NotificationPrefs() {
   const prefs = useNotificationPreferences();
   const update = useUpdateNotificationPreferences();
-  const enabled = prefs.data?.emailNotifications ?? true;
+  const emailOn = prefs.data?.emailNotifications ?? true;
+  const categories = prefs.data?.categories;
+  const busy = prefs.isLoading || update.isPending;
+
   return (
-    <label className="flex items-center gap-3 text-sm">
-      <input
-        type="checkbox"
-        checked={enabled}
-        onChange={(e) => update.mutate({ emailNotifications: e.target.checked })}
-        disabled={prefs.isLoading || update.isPending}
-      />
-      Recibir notificaciones por email
-    </label>
+    <div className="space-y-3">
+      <label className="flex items-center gap-3 text-sm font-medium">
+        <input
+          type="checkbox"
+          checked={emailOn}
+          onChange={(e) => update.mutate({ emailNotifications: e.target.checked })}
+          disabled={busy}
+        />
+        Recibir notificaciones por email
+      </label>
+      <div className={`space-y-2 pl-6 ${emailOn ? '' : 'opacity-50'}`}>
+        <p className="text-xs text-muted">Por categoría:</p>
+        {NOTIF_CATEGORY_ORDER.map((c) => (
+          <label key={c} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={categories?.[c] ?? true}
+              disabled={!emailOn || busy}
+              onChange={(e) => update.mutate({ categories: { [c]: e.target.checked } })}
+            />
+            {NOTIF_CATEGORY_LABELS[c]}
+          </label>
+        ))}
+      </div>
+      <p className="text-xs text-muted">Las notificaciones en la app (campana) siempre están activas.</p>
+    </div>
   );
 }
 

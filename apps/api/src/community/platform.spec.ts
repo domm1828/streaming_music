@@ -132,6 +132,20 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       expect(after.data.find((n) => String(n._id) === String(first._id))?.readAt).toBeTruthy();
     });
 
+    it('preferencias de email por categoría: default todo en true, guarda y lee parcial', async () => {
+      const def = await notifications.getPreferences(userId);
+      expect(def.emailNotifications).toBe(true);
+      expect(def.categories).toEqual({ social: true, backstage: true, announcements: true });
+
+      const saved = await notifications.setPreferences(userId, {
+        emailNotifications: false,
+        categories: { announcements: false },
+      });
+      expect(saved.emailNotifications).toBe(false);
+      expect(saved.categories.announcements).toBe(false);
+      expect(saved.categories.social).toBe(true); // las no enviadas no cambian
+    });
+
     it('broadcast: cuenta la audiencia y entrega a cada usuario activo', async () => {
       const all = await notifications.countAudience({ kind: 'all' });
       expect(all).toBeGreaterThanOrEqual(2); // user + admin

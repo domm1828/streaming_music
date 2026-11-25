@@ -52,9 +52,13 @@ export class User {
   @Prop({ default: 'es' })
   language!: string;
 
-  /** Preferencia: recibir notificaciones por email. */
+  /** Preferencia: recibir notificaciones por email (master). */
   @Prop({ default: true })
   emailNotifications!: boolean;
+
+  /** Preferencia de email por categoría (`{ social, backstage, announcements }`). */
+  @Prop({ type: Object, default: {} })
+  notificationPrefs!: Record<string, boolean>;
 
   @Prop({ default: 'user' })
   type!: string;

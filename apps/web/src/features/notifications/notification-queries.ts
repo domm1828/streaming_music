@@ -48,9 +48,17 @@ export function useMarkAllRead() {
   });
 }
 
+export type NotificationCategory = 'social' | 'backstage' | 'announcements';
+
 export interface NotificationPreferences {
   emailNotifications: boolean;
+  categories: Record<NotificationCategory, boolean>;
 }
+
+export type NotificationPreferencesInput = {
+  emailNotifications?: boolean;
+  categories?: Partial<Record<NotificationCategory, boolean>>;
+};
 
 export function useNotificationPreferences() {
   const { isAuthenticated } = useAuth();
@@ -64,7 +72,7 @@ export function useNotificationPreferences() {
 export function useUpdateNotificationPreferences() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (prefs: NotificationPreferences) =>
+    mutationFn: (prefs: NotificationPreferencesInput) =>
       mutate<NotificationPreferences>('put', 'me/notifications/preferences', prefs),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications', 'preferences'] }),
   });

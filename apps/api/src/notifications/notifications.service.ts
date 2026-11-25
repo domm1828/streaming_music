@@ -30,6 +30,22 @@ export interface BroadcastInput {
   audience: BroadcastAudience;
 }
 
+/** Categorías de notificación para las preferencias de email por canal. */
+export const NOTIFICATION_CATEGORIES = ['social', 'backstage', 'announcements'] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+/** Deriva la categoría a partir del `type` de la notificación. */
+export function categoryOf(type: string): NotificationCategory {
+  if (type.startsWith('backstage.')) return 'backstage';
+  if (type.startsWith('admin.')) return 'announcements';
+  return 'social';
+}
+
+export interface NotificationPreferences {
+  emailNotifications: boolean;
+  categories: Record<NotificationCategory, boolean>;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -55,8 +71,13 @@ export class NotificationsService {
 
     if (input.email) {
       try {
-        const user = await this.userModel.findById(input.userId).select('email emailNotifications').lean().exec();
-        if (user?.email && user.emailNotifications !== false) {
+        const user = await this.userModel
+          .findById(input.userId)
+          .select('email emailNotifications notificationPrefs')
+          .lean()
+          .exec();
+        const categoryOn = user?.notificationPrefs?.[categoryOf(input.type)] !== false;
+        if (user?.email && user.emailNotifications !== false && categoryOn) {
           await this.mail.sendNotification(user.email, input.title, input.body ?? input.title);
           notification.emailSent = true;
           await notification.save();
@@ -119,14 +140,28 @@ export class NotificationsService {
     return this.model.countDocuments({ user: new Types.ObjectId(userId), readAt: null }).exec();
   }
 
-  async getPreferences(userId: string): Promise<{ emailNotifications: boolean }> {
-    const user = await this.userModel.findById(userId).select('emailNotifications').lean().exec();
-    return { emailNotifications: user?.emailNotifications ?? true };
+  async getPreferences(userId: string): Promise<NotificationPreferences> {
+    const user = await this.userModel.findById(userId).select('emailNotifications notificationPrefs').lean().exec();
+    const prefs = user?.notificationPrefs ?? {};
+    const categories = Object.fromEntries(
+      NOTIFICATION_CATEGORIES.map((c) => [c, prefs[c] !== false]),
+    ) as Record<NotificationCategory, boolean>;
+    return { emailNotifications: user?.emailNotifications ?? true, categories };
   }
 
-  async setPreferences(userId: string, emailNotifications: boolean): Promise<{ emailNotifications: boolean }> {
-    await this.userModel.updateOne({ _id: userId }, { $set: { emailNotifications } }).exec();
-    return { emailNotifications };
+  async setPreferences(
+    userId: string,
+    input: { emailNotifications?: boolean; categories?: Partial<Record<NotificationCategory, boolean>> },
+  ): Promise<NotificationPreferences> {
+    const set: Record<string, unknown> = {};
+    if (input.emailNotifications !== undefined) set.emailNotifications = input.emailNotifications;
+    for (const c of NOTIFICATION_CATEGORIES) {
+      if (input.categories?.[c] !== undefined) set[`notificationPrefs.${c}`] = input.categories[c];
+    }
+    if (Object.keys(set).length > 0) {
+      await this.userModel.updateOne({ _id: userId }, { $set: set }).exec();
+    }
+    return this.getPreferences(userId);
   }
 
   async markRead(id: string, userId: string): Promise<void> {
