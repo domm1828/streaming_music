@@ -1,9 +1,11 @@
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { currentTrack, usePlayerStore } from './player-store';
+import { EqualizerBars } from './EqualizerBars';
 
 export function QueuePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const queue = usePlayerStore((s) => s.queue);
   const index = usePlayerStore((s) => s.index);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
   const playing = usePlayerStore(currentTrack);
   const { jumpTo, removeFromQueue, reorderQueue } = usePlayerStore.getState();
 
@@ -30,7 +32,10 @@ export function QueuePanel({ open, onClose }: { open: boolean; onClose: () => vo
                 className={`group flex items-center gap-2 rounded-md px-2 py-1.5 ${isCurrent ? 'bg-main/10' : 'hover:bg-main/5'}`}
               >
                 <button onClick={() => jumpTo(i)} className="min-w-0 flex-1 text-left">
-                  <p className={`truncate text-sm ${isCurrent ? 'font-semibold text-brand-primary' : ''}`}>{track.name}</p>
+                  <span className="flex items-center gap-2">
+                    {isCurrent && isPlaying && <EqualizerBars className="shrink-0" />}
+                    <span className={`truncate text-sm ${isCurrent ? 'font-semibold text-brand-primary' : ''}`}>{track.name}</span>
+                  </span>
                   <p className="truncate text-xs text-muted">
                     {track.artists?.map((a) => a.artist.name).join(', ')}
                   </p>

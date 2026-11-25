@@ -5,6 +5,7 @@ import { PlayerBar } from './PlayerBar';
 import { PlayerEngine } from './PlayerEngine';
 import { QueuePanel } from './QueuePanel';
 import { LyricsPanel } from './LyricsPanel';
+import { FullscreenPlayer } from './FullscreenPlayer';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -13,6 +14,7 @@ export function WebPlayerLayout() {
   useRadioAutoExtend();
   const [queueOpen, setQueueOpen] = useState(false);
   const [lyricsOpen, setLyricsOpen] = useState(false);
+  const [fullOpen, setFullOpen] = useState(false);
 
   return (
     <div className="flex h-screen flex-col bg-surface text-main">
@@ -36,8 +38,10 @@ export function WebPlayerLayout() {
           queueOpen={queueOpen}
           onToggleLyrics={() => setLyricsOpen((o) => !o)}
           lyricsOpen={lyricsOpen}
+          onExpand={() => setFullOpen(true)}
         />
       </div>
+      <FullscreenPlayer open={fullOpen} onClose={() => setFullOpen(false)} />
       <PlayerEngine />
     </div>
   );

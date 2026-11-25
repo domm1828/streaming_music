@@ -83,3 +83,24 @@ body {
   background: var(--divider);
   border-radius: 9999px;
 }
+
+/* Indicador "sonando": barras de ecualizador animadas */
+@keyframes sm-eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.sm-eq-bar {
+  transform-origin: bottom;
+  animation: sm-eq 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sm-eq-bar {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
