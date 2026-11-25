@@ -1,4 +1,4 @@
-import { IsEnum, IsIn, IsMongoId, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsIn, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { COMMENTABLE_TYPES, CommentableType } from '../schemas/comment.schema';
 import { REPORTABLE_TYPES, ReportableType, ReportStatus } from '../schemas/report.schema';
@@ -32,6 +32,13 @@ export class CreateCommentDto {
   @IsMongoId()
   @IsOptional()
   parentId?: string;
+
+  /** Segundo de la pista al que se ancla el comentario (opcional). */
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(100000)
+  timestamp?: number;
 }
 
 export class VoteDto {

@@ -26,6 +26,7 @@ export class CommentsService {
     id: string,
     content: string,
     parentId?: string,
+    timestamp?: number,
   ): Promise<CommentDocument> {
     if (!(await this.settings.getBoolean('commentsEnabled', true))) {
       throw new ForbiddenException('Los comentarios están deshabilitados');
@@ -41,6 +42,8 @@ export class CommentsService {
       commentableType: type,
       commentable: new Types.ObjectId(id),
       content,
+      // El anclaje temporal sólo tiene sentido en comentarios de primer nivel sobre pistas.
+      timestamp: !parentId && type === 'track' && typeof timestamp === 'number' ? Math.max(0, Math.round(timestamp)) : null,
       parent: parentId ? new Types.ObjectId(parentId) : null,
       path,
     });

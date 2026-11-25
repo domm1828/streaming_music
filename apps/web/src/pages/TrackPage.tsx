@@ -7,6 +7,7 @@ import { ShareButton } from '../features/social/ShareButton';
 import { AddToPlaylist } from '../features/playlists/AddToPlaylist';
 import { OfflineButton } from '../features/offline/OfflineButton';
 import { TrackList } from '../features/catalog/TrackList';
+import { TrackComments } from '../features/community/TrackComments';
 import { MediaHeader, PlayButton, SectionHeader, pillClass } from '../components/media';
 import { useSimilarTracks } from '../features/discovery/discovery-queries';
 
@@ -18,6 +19,14 @@ export function TrackPage() {
 
   if (isLoading) return <p className="text-muted">Cargando…</p>;
   if (isError || !data) return <p className="text-red-500">Pista no encontrada.</p>;
+
+  const track = data;
+  const seekToTime = (seconds: number) => {
+    const st = usePlayerStore.getState();
+    const current = st.queue[st.index];
+    if (current?._id === track._id) st.seekTo(seconds);
+    else st.playTrack(track); // si no es la pista actual, la reproduce (y se puede reanclar luego)
+  };
 
   return (
     <div className="space-y-8 pt-2">
@@ -98,6 +107,8 @@ export function TrackPage() {
           <TrackList tracks={similar.data.data} showAlbum />
         </section>
       )}
+
+      <TrackComments trackId={track._id} onSeek={seekToTime} />
     </div>
   );
 }

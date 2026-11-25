@@ -191,6 +191,18 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       expect(after.data.length).toBe(1); // el oculto no aparece
     });
 
+    it('ancla comentarios de pista a un timestamp (solo raíz y solo en pistas)', async () => {
+      const tId = String((await artistModel.create({ name: 'TT', slug: 'tt-' + Date.now() }))._id);
+      const timed = await comments.create(userId, 'track', tId, 'En el drop', undefined, 42.7);
+      expect(timed.timestamp).toBe(43); // redondeado
+
+      const reply = await comments.create(userId, 'track', tId, 'respuesta', String(timed._id), 10);
+      expect(reply.timestamp).toBeNull(); // las respuestas no se anclan
+
+      const onArtist = await comments.create(userId, 'artist', tId, 'x', undefined, 10);
+      expect(onArtist.timestamp).toBeNull(); // sólo pistas
+    });
+
     it('respeta el ajuste commentsEnabled', async () => {
       const artId = String((await artistModel.create({ name: 'T2', slug: 't2-' + Date.now() }))._id);
       await settings.set('commentsEnabled', false);
