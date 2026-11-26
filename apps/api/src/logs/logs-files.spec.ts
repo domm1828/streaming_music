@@ -53,10 +53,10 @@ describe('Logs y file manager (e2e, in-memory)', () => {
 
   it('registra, lista y borra entradas de archivo', async () => {
     const e = await files.record({ url: 'http://x/u/a.png', path: '/uploads/images/a.png', filename: 'a.png', mime: 'image/png', size: 10 });
-    const list = await files.list(1, 20);
+    const list = await files.list({ page: 1, perPage: 20 });
     expect(list.pagination.total).toBe(1);
 
     await files.remove(String(e._id));
-    expect((await files.list(1, 20)).pagination.total).toBe(0);
+    expect((await files.list({ page: 1, perPage: 20 })).pagination.total).toBe(0);
   });
 });
