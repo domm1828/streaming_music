@@ -47,7 +47,7 @@ export class UploadsController {
     const stored = await this.storage.saveBuffer(file.buffer, 'images', filename);
 
     const proto = (req.headers['x-forwarded-proto'] as string) ?? req.protocol;
-    const url = this.storage.driver === 'local' ? `${proto}://${req.get('host')}${stored.publicPath}` : stored.publicPath;
+    const url = this.storage.publicUrl(stored.publicPath, `${proto}://${req.get('host')}`);
 
     await this.files.record({
       url,
