@@ -8,13 +8,14 @@
 //   pm2 start ecosystem.config.cjs
 //   pm2 save && pm2 startup   # arranque en el boot
 //
-// Ajustá `cwd` si clonaste el repo en otra ruta.
+// `cwd` apunta a la carpeta de este archivo (la raíz del repo), sea cual sea la
+// ruta donde lo clonaste. Así la API encuentra su .env sin editar nada acá.
 module.exports = {
   apps: [
     {
       name: 'stream-music-api',
       script: 'apps/api/dist/main.js',
-      cwd: '/opt/streaming_music',
+      cwd: __dirname,
       instances: 1,
       exec_mode: 'fork',
       env: {
