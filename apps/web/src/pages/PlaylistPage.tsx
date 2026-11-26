@@ -13,7 +13,7 @@ import {
   useReorderTracks,
   useUpdatePlaylist,
 } from '../features/playlists/playlist-queries';
-import { useUploadImage } from '../features/creator/creator-queries';
+import { MediaPickerDialog } from '../features/media/MediaPickerDialog';
 import { useSearchType } from '../features/discovery/discovery-queries';
 import { useDebounce } from '../lib/use-debounce';
 import { usePlayerStore } from '../features/player/player-store';
@@ -28,9 +28,9 @@ export function PlaylistPage() {
   const removeTrack = useRemoveTrack(id);
   const update = useUpdatePlaylist(id);
   const addTracks = useAddTracks(id);
-  const uploadCover = useUploadImage();
   const del = useDeletePlaylist();
   const [editing, setEditing] = useState(false);
+  const [showCover, setShowCover] = useState(false);
   const [q, setQ] = useState('');
   const search = useSearchType<Track>(useDebounce(q.trim(), 250), 'track', 1);
 
@@ -81,18 +81,18 @@ export function PlaylistPage() {
             {!data.isOwner && <FollowButton type="playlist" id={id} />}
             {data.isOwner && (
               <>
-                <label className={`${pillClass()} cursor-pointer`}>
-                  <ImagePlus size={16} /> {uploadCover.isPending ? 'Subiendo…' : 'Portada'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) uploadCover.mutate(f, { onSuccess: (url) => update.mutate({ image: url }) });
-                    }}
+                <button type="button" onClick={() => setShowCover(true)} className={pillClass()}>
+                  <ImagePlus size={16} /> Portada
+                </button>
+                {showCover && (
+                  <MediaPickerDialog
+                    kind="image"
+                    scope="mine"
+                    title="Seleccionar portada"
+                    onSelect={({ url }) => update.mutate({ image: url })}
+                    onClose={() => setShowCover(false)}
                   />
-                </label>
+                )}
                 <button type="button" onClick={() => setEditing((e) => !e)} className={pillClass()}>
                   Editar
                 </button>
