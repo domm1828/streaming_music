@@ -1,8 +1,10 @@
-# Despliegue de producción: edge (Caddy) + API + SeaweedFS.
-# MongoDB NO corre en un contenedor: se usa el que ya está instalado en el host
-# del VPS (la API lo alcanza por host.docker.internal). No incluye redis (no se
-# usa) ni meilisearch (opcional; con driver 'auto' la búsqueda cae al índice de
-# texto de Mongo).
+# Despliegue de producción: API + SeaweedFS (en Docker).
+# Fuera de Docker, en el host del VPS:
+#   - MongoDB (la API lo alcanza por host.docker.internal).
+#   - nginx: termina TLS, sirve el SPA (apps/web/dist) y hace de reverse proxy
+#     hacia estos contenedores (/api → :3000, /s3 → :8333). Ver docker/nginx/.
+# No incluye redis (no se usa) ni meilisearch (opcional; con driver 'auto' la
+# búsqueda cae al índice de texto de Mongo).
 #
 # Uso:
 #   cp .env.production.example .env.production   # y completá los valores
@@ -10,24 +12,6 @@
 name: stream-music-prod
 
 services:
-  caddy:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    image: stream-music-edge
-    container_name: stream-music-caddy
-    restart: unless-stopped
-    depends_on:
-      - api
-    environment:
-      DOMAIN: ${DOMAIN:?Definí DOMAIN en .env.production}
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - caddy-data:/data # certificados Let's Encrypt (persistentes)
-      - caddy-config:/config
-
   api:
     build:
       context: .
@@ -48,8 +32,9 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - api-storage:/app/storage # temporales de TUS y, si se usa driver local, /uploads
-    expose:
-      - '3000'
+    # Publicado solo en loopback: lo consume el nginx del host, no Internet.
+    ports:
+      - '127.0.0.1:3000:3000'
 
   seaweedfs:
     image: chrislusf/seaweedfs:3.80
@@ -59,11 +44,11 @@ services:
     volumes:
       - seaweedfs-data:/data
       - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
-    expose:
-      - '8333'
+    # El gateway S3 se publica en loopback para que el nginx del host lo exponga
+    # en /s3. La API lo sigue alcanzando por la red interna como 'seaweedfs:8333'.
+    ports:
+      - '127.0.0.1:8333:8333'
 
 volumes:
-  caddy-data:
-  caddy-config:
   api-storage:
   seaweedfs-data:

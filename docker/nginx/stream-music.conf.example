@@ -1,0 +1,81 @@
+# nginx del HOST para Stream Music (fuera de Docker).
+# Sirve el SPA estático y hace de reverse proxy hacia los contenedores
+# (API y SeaweedFS, publicados en 127.0.0.1 por docker-compose.prod.yml).
+#
+# Instalación:
+#   sudo cp docker/nginx/stream-music.conf.example /etc/nginx/sites-available/stream-music.conf
+#   sudo ln -s /etc/nginx/sites-available/stream-music.conf /etc/nginx/sites-enabled/
+#   sudo mkdir -p /var/www/stream-music      # raíz del SPA (ver DEPLOYMENT.md)
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# TLS: la forma más simple es dejar que certbot gestione el certificado y
+# reescriba este bloque:
+#   sudo certbot --nginx -d stream.duglasm.com
+# (agrega ssl_certificate / listen 443 ssl / redirección 80→443 solo).
+
+# ── HTTP: redirige a HTTPS (certbot suele generar algo equivalente) ──
+server {
+    listen 80;
+    listen [::]:80;
+    server_name stream.duglasm.com;
+    # Deja pasar el challenge HTTP-01 de Let's Encrypt si usás webroot.
+    location /.well-known/acme-challenge/ { root /var/www/stream-music; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name stream.duglasm.com;
+
+    # certbot completa estas dos líneas (o poné tus rutas de certificado):
+    ssl_certificate     /etc/letsencrypt/live/stream.duglasm.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stream.duglasm.com/privkey.pem;
+
+    # Raíz del SPA (contenido de apps/web/dist).
+    root  /var/www/stream-music;
+    index index.html;
+
+    # Subidas grandes (audio, TUS). Ajustá según tu límite real.
+    client_max_body_size 1024m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # ── API NestJS (conserva el prefijo /api) ──
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;   # https → cookies seguras, OAuth
+        proxy_read_timeout 300s;                       # imports/jobs largos
+    }
+
+    # ── WebSocket (notificaciones en tiempo real) ──
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+    }
+
+    # ── Assets S3 (SeaweedFS): /s3/<bucket>/... → gateway, sin el prefijo /s3 ──
+    location /s3/ {
+        proxy_pass http://127.0.0.1:8333/;            # la barra final quita /s3/
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    # ── SPA: cualquier otra ruta cae en index.html (React Router) ──
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
