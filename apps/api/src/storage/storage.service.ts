@@ -75,7 +75,20 @@ export class StorageService {
   }
 
   private publicToRelative(publicPath: string): string {
-    return publicPath.replace(new RegExp(`^${this.publicBase}/?`), '');
+    let p = publicPath;
+    // Si viene como URL pública de S3 (p.ej. https://host/s3/bucket/...), quitar esa base.
+    if (this.cfg.driver === 's3') {
+      const base = this.cfg.s3PublicUrl
+        ? this.cfg.s3PublicUrl.replace(/\/$/, '')
+        : this.cfg.s3Endpoint
+          ? `${this.cfg.s3Endpoint.replace(/\/$/, '')}/${this.cfg.s3Bucket}`
+          : '';
+      if (base && p.startsWith(base)) p = p.slice(base.length);
+    }
+    // Quitar un origin absoluto (http(s)://host) si viniera incluido.
+    p = p.replace(/^https?:\/\/[^/]+/, '');
+    // Quitar la base pública de uploads y la barra inicial → clave relativa.
+    return p.replace(new RegExp(`^${this.publicBase}/?`), '').replace(/^\//, '');
   }
 
   private async s3() {
