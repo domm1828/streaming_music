@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 import { usePlayerStore, type PlayerTrack } from './player-store';
 import type { YTPlayer } from './youtube';
 
@@ -65,6 +65,7 @@ export function YouTubeProvider({ track }: { track: PlayerTrack }) {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
   const pendingSeek = usePlayerStore((s) => s._pendingSeek);
+  const videoBox = usePlayerStore((s) => s.videoBox);
 
   useEffect(() => {
     const p = playerRef.current;
@@ -94,5 +95,22 @@ export function YouTubeProvider({ track }: { track: PlayerTrack }) {
     return () => clearInterval(id);
   }, []);
 
-  return <div className="pointer-events-none fixed -left-[9999px] h-1 w-1"><div ref={containerRef} /></div>;
+  const style: CSSProperties = videoBox
+    ? {
+        position: 'fixed',
+        top: videoBox.top,
+        left: videoBox.left,
+        width: videoBox.width,
+        height: videoBox.height,
+        zIndex: 60,
+        borderRadius: 16,
+        overflow: 'hidden',
+      }
+    : { position: 'fixed', left: -9999, top: 0, width: 1, height: 1, pointerEvents: 'none' };
+
+  return (
+    <div className="sm-yt" style={style}>
+      <div ref={containerRef} className="h-full w-full" />
+    </div>
+  );
 }

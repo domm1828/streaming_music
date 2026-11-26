@@ -61,6 +61,16 @@ interface PlayerState {
   toggleShuffle: () => void;
   _pendingSeek: number | null;
   consumeSeek: () => number | null;
+  /** Rectángulo (en viewport) donde mostrar el video de YouTube; null = oculto. */
+  videoBox: VideoBox | null;
+  setVideoBox: (box: VideoBox | null) => void;
+}
+
+export interface VideoBox {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -169,6 +179,8 @@ export const usePlayerStore = create<PlayerState>()(
         if (v !== null) set({ _pendingSeek: null });
         return v;
       },
+      videoBox: null,
+      setVideoBox: (box) => set({ videoBox: box }),
     }),
     {
       name: 'stream-music-player',
