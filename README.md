@@ -74,6 +74,70 @@ La home del frontend consulta `GET /api/v1/health` para verificar la conexión d
 └── .env.example
 ```
 
+## Despliegue en producción (VPS + dominio)
+
+Guía de lo que hay que hacer para publicar en un dominio (ej. `stream.duglasm.com`). En
+**Docker** corren solo la **API** y **SeaweedFS**; el **MongoDB**, el **nginx** (TLS + SPA +
+reverse proxy) y la compilación del frontend viven en el **host del VPS**. Detalle completo y
+notas de seguridad en [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
+### Qué necesitás en el VPS
+
+- Docker + Docker Compose v2, **nginx** y **Node.js >= 20** (para compilar el SPA).
+- Puertos **80 y 443** abiertos.
+- Un registro **DNS A** del dominio apuntando a la IP del VPS (debe resolver antes de emitir
+  el certificado TLS).
+- **MongoDB instalado y corriendo en el host**, accesible desde los contenedores:
+  - En `/etc/mongod.conf`, `net.bindIp` debe incluir la IP del gateway de Docker
+    (ej. `127.0.0.1,172.17.0.1`) o `0.0.0.0` (en ese caso, cerrá el puerto `27017` en el
+    firewall a todo lo externo). Reiniciá `mongod` después del cambio.
+  - Creá la base `stream_music` y un **usuario con auth** (no uses el root).
+
+### Pasos
+
+```bash
+# 1) Config de producción (NO se commitea: contiene secretos)
+cp .env.production.example .env.production
+#    Editá: CORS_ORIGIN, APP_URL, MONGODB_URI (apunta a host.docker.internal:27017),
+#    JWT_*, STORAGE_SIGNING_SECRET, S3_*, MAIL_* y ADMIN_*.  (generá secretos con openssl rand -base64 48)
+
+# 2) Cambiá el secret por defecto de SeaweedFS en docker/seaweedfs/s3.json
+#    (debe coincidir con S3_SECRET_KEY del .env.production)
+
+# 3) Levantar los contenedores (API + SeaweedFS), publicados en 127.0.0.1
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+
+# 4) Crear el admin inicial (seeder de producción, idempotente)
+docker compose -f docker-compose.prod.yml exec api node apps/api/dist/seed-admin.js
+
+# 5) Compilar el SPA y publicarlo en la raíz de nginx
+npm ci
+npm run build -w @stream-music/shared && npm run build -w @stream-music/web
+sudo mkdir -p /var/www/stream-music
+sudo cp -r apps/web/dist/* /var/www/stream-music/
+
+# 6) nginx: instalar el server block y emitir el certificado TLS
+sudo cp docker/nginx/stream-music.conf.example /etc/nginx/sites-available/stream-music.conf
+sudo ln -s /etc/nginx/sites-available/stream-music.conf /etc/nginx/sites-enabled/
+#    (ajustá el server_name del archivo a tu dominio)
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d stream.duglasm.com      # Let's Encrypt, con renovación automática
+
+# 7) Verificar
+curl -sS https://stream.duglasm.com/api/v1/health   # {status: ok, database: connected}
+```
+
+> Si el VPS no tiene Node, podés compilar el SPA en otra máquina (`npm run build -w
+> @stream-music/web`) y copiar el contenido de `apps/web/dist` a `/var/www/stream-music`.
+
+### Actualizaciones
+
+- **Frontend**: recompilar y volver a copiar el `dist`.
+  ```bash
+  npm run build -w @stream-music/web && sudo rsync -av --delete apps/web/dist/ /var/www/stream-music/
+  ```
+- **API**: `docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build api`
+
 ## Roadmap
 
 El trabajo está organizado por fases (Phase 0 a Phase 8) en los milestones e issues del repositorio
