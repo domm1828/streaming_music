@@ -45,6 +45,13 @@ export class BootstrapController {
         defaultLocale: (publicSettings.defaultLocale as string) ?? 'es',
         billingEnabled: false,
         ...publicSettings,
+        player: {
+          enableDownload: publicSettings['player.enableDownload'] !== false,
+          hideLyrics: publicSettings['player.hideLyrics'] === true,
+          hideQueue: publicSettings['player.hideQueue'] === true,
+          hideFullscreen: publicSettings['player.hideFullscreen'] === true,
+          continuousPlay: publicSettings['player.continuousPlay'] !== false,
+        },
       },
       menus: {
         primary: Array.isArray(primaryMenu) && primaryMenu.length > 0 ? primaryMenu : DEFAULT_PRIMARY_MENU,

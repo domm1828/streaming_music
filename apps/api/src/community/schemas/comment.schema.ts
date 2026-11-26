@@ -21,6 +21,10 @@ export class Comment {
   @Prop({ required: true, trim: true })
   content!: string;
 
+  /** Segundo de la pista al que se ancla el comentario (comentarios por tiempo). */
+  @Prop({ type: Number, default: null })
+  timestamp!: number | null;
+
   @Prop({ type: Types.ObjectId, ref: Comment.name, default: null })
   parent!: Types.ObjectId | null;
 

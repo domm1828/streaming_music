@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useDebounce } from '../../lib/use-debounce';
 import { useArtists, useGenres } from '../catalog/catalog-queries';
-import { useAdminArtist, useUpdateArtist, useUploadImage } from './catalog-admin-queries';
+import { useAdminArtist, useUpdateArtist } from './catalog-admin-queries';
+import { MediaField } from '../media/MediaField';
 
 const field = 'w-full rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary';
 
@@ -15,7 +16,6 @@ export function ArtistEditDialog({ artistId, onClose }: { artistId: string; onCl
   const { data, isLoading } = useAdminArtist(artistId);
   const genresQuery = useGenres();
   const update = useUpdateArtist();
-  const upload = useUploadImage();
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -76,25 +76,7 @@ export function ArtistEditDialog({ artistId, onClose }: { artistId: string; onCl
           <p className="text-muted">Cargando…</p>
         ) : (
           <>
-            <div className="flex items-center gap-3">
-              {image ? (
-                <img src={image} alt="" className="h-16 w-16 rounded-full object-cover" />
-              ) : (
-                <div className="h-16 w-16 rounded-full bg-chip" />
-              )}
-              <label className="cursor-pointer text-sm text-brand-secondary hover:underline">
-                {upload.isPending ? 'Subiendo…' : 'Cambiar imagen'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload.mutate(f, { onSuccess: (url) => setImage(url) });
-                  }}
-                />
-              </label>
-            </div>
+            <MediaField value={image} onChange={setImage} label="Imagen" shape="circle" />
 
             <div>
               <label className="mb-1 block text-xs font-medium text-muted">Nombre</label>

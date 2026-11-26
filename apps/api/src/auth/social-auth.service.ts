@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { randomBytes } from 'node:crypto';
 import slugify from 'slugify';
+import { SettingsService } from '../settings/settings.service';
 import { UsersService } from '../users/users.service';
 import type { AuthResult } from './auth.service';
 import { SessionMeta, TokensService } from './tokens.service';
@@ -23,6 +24,7 @@ export class SocialAuthService {
     @InjectModel(SocialProfile.name) private readonly model: Model<SocialProfileDocument>,
     private readonly users: UsersService,
     private readonly tokens: TokensService,
+    private readonly settings: SettingsService,
   ) {}
 
   private async buildResult(userId: string, email: string, meta: SessionMeta): Promise<AuthResult> {
@@ -63,6 +65,10 @@ export class SocialAuthService {
     // 2) Enlazar a una cuenta existente por email, o crear una nueva.
     let user = await this.users.findByEmail(profile.email);
     if (!user) {
+      // Si el admin exige cuenta previa, no se crea una nueva desde el login social.
+      if (await this.settings.getBoolean('auth.social.requireAccount', false)) {
+        throw new UnauthorizedException('Necesitás una cuenta existente para iniciar sesión con redes');
+      }
       user = await this.users.create({
         name: profile.name,
         username: await this.uniqueUsername(profile.name || profile.email.split('@')[0]),
@@ -74,5 +80,39 @@ export class SocialAuthService {
 
     await this.model.create({ user: user._id, provider, providerId: profile.providerId });
     return this.buildResult(String(user._id), user.email, meta);
+  }
+
+  /** Proveedores sociales vinculados a la cuenta del usuario. */
+  async listForUser(userId: string): Promise<{ provider: SocialProvider; connectedAt: Date }[]> {
+    const rows = await this.model
+      .find({ user: new Types.ObjectId(userId) })
+      .lean()
+      .exec();
+    return rows.map((r) => ({
+      provider: r.provider,
+      connectedAt: (r as { createdAt?: Date }).createdAt ?? new Date(),
+    }));
+  }
+
+  /** Desvincula un proveedor de la cuenta (sin dejar al usuario sin acceso). */
+  async unlink(userId: string, provider: SocialProvider): Promise<void> {
+    const user = await this.users.findByIdWithPassword(userId);
+    const count = await this.model.countDocuments({ user: new Types.ObjectId(userId) });
+    if (!user?.passwordHash && count <= 1) {
+      throw new BadRequestException(
+        'No podés desvincular tu único método de acceso. Primero configurá una contraseña.',
+      );
+    }
+    await this.model.deleteOne({ user: new Types.ObjectId(userId), provider }).exec();
+  }
+
+  /** Vincula un perfil social ya verificado a una cuenta existente (desde Ajustes). */
+  async linkToUser(userId: string, provider: SocialProvider, profile: SocialProfileData): Promise<void> {
+    const existing = await this.model.findOne({ provider, providerId: profile.providerId }).lean().exec();
+    if (existing) {
+      if (String(existing.user) === userId) return; // ya vinculado a esta cuenta
+      throw new ConflictException('Esa cuenta social ya está vinculada a otro usuario');
+    }
+    await this.model.create({ user: new Types.ObjectId(userId), provider, providerId: profile.providerId });
   }
 }

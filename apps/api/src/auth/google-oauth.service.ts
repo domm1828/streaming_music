@@ -1,54 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IntegrationsConfig } from '../config/configuration';
+import { SettingsService } from '../settings/settings.service';
+import { BaseSocialOAuth } from './oauth-provider';
+import type { SocialProvider } from './schemas/social-profile.schema';
 import type { SocialProfileData } from './social-auth.service';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
-/** Cliente OAuth de Google (authorization code). Gracioso si no hay credenciales. */
+/** Cliente OAuth de Google (authorization code). Credenciales desde settings/.env. */
 @Injectable()
-export class GoogleOAuthService {
-  private readonly clientId: string;
-  private readonly clientSecret: string;
+export class GoogleOAuthService extends BaseSocialOAuth {
+  protected readonly provider: SocialProvider = 'google';
 
-  constructor(config: ConfigService) {
-    const cfg = config.get<IntegrationsConfig>('integrations');
-    this.clientId = cfg?.googleClientId ?? '';
-    this.clientSecret = cfg?.googleClientSecret ?? '';
+  constructor(config: ConfigService, settings: SettingsService) {
+    super(config, settings);
   }
 
-  isConfigured(): boolean {
-    return Boolean(this.clientId && this.clientSecret);
+  protected envCreds(): { id: string; secret: string } {
+    const cfg = this.config.get<IntegrationsConfig>('integrations');
+    return { id: cfg?.googleClientId ?? '', secret: cfg?.googleClientSecret ?? '' };
   }
 
-  authorizeUrl(redirectUri: string): string {
+  async buildAuthorize(redirectUri: string): Promise<{ url: string }> {
+    const { id } = await this.resolveCreds();
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: id,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'openid email profile',
       access_type: 'online',
       prompt: 'select_account',
     });
-    return `${AUTH_URL}?${params.toString()}`;
-  }
-
-  /** Forma común con el resto de proveedores (sin PKCE). */
-  buildAuthorize(redirectUri: string): { url: string } {
-    return { url: this.authorizeUrl(redirectUri) };
+    return { url: `${AUTH_URL}?${params.toString()}` };
   }
 
   /** Intercambia el code por el perfil del usuario. */
   async exchange(code: string, redirectUri: string): Promise<SocialProfileData> {
+    const { id, secret } = await this.resolveCreds();
     const tokenRes = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
+        client_id: id,
+        client_secret: secret,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }).toString(),

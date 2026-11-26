@@ -11,7 +11,7 @@ export type ChannelSourceType =
   | 'genreTracks'
   | 'publicPlaylists'
   | 'manual';
-export type ChannelLayout = 'grid' | 'carousel' | 'list';
+export type ChannelLayout = 'grid' | 'carousel' | 'list' | 'trackTable';
 export interface ChannelContentItem {
   refType: 'track' | 'album' | 'artist' | 'playlist';
   refId: string;
@@ -160,6 +160,20 @@ export function useUpdateAlbum() {
       qc.invalidateQueries({ queryKey: ['admin-albums'] });
       qc.invalidateQueries({ queryKey: ['admin-album', v.id] });
     },
+  });
+}
+export function useCreateAlbum() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: {
+      name: string;
+      image?: string;
+      description?: string;
+      releaseDate?: string;
+      artists?: string[];
+      genres?: string[];
+    }) => mutate<Album>('post', 'albums', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-albums'] }),
   });
 }
 export function useReorderAlbumTracks(albumId: string) {

@@ -36,7 +36,21 @@ services:
       - '1025:1025' # SMTP
       - '8025:8025' # Web UI
 
+  # Almacenamiento de objetos S3-compatible para medios (imágenes, audio, video).
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.80
+    container_name: stream-music-seaweedfs
+    restart: unless-stopped
+    command: 'server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data'
+    ports:
+      - '8333:8333' # API S3
+      - '8888:8888' # Filer (opcional)
+    volumes:
+      - seaweedfs-data:/data
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+
 volumes:
   mongo-data:
   redis-data:
   meili-data:
+  seaweedfs-data:

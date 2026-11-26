@@ -1,28 +1,34 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createTransport, Transporter } from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import type { MailConfig } from '../config/configuration';
 import { LogsService } from '../logs/logs.service';
+import { SettingsService } from '../settings/settings.service';
+
+interface ResolvedMail {
+  transport: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+}
+
+export interface MailResult {
+  ok: boolean;
+  error?: string;
+}
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private readonly transporter: Transporter;
-  private readonly from: string;
 
   constructor(
     private readonly config: ConfigService,
+    private readonly settings: SettingsService,
     @Optional() private readonly logs?: LogsService,
-  ) {
-    const mail = this.config.get<MailConfig>('mail')!;
-    this.from = mail.from;
-    this.transporter = createTransport({
-      host: mail.host,
-      port: mail.port,
-      secure: false,
-      ignoreTLS: true,
-    });
-  }
+  ) {}
 
   async sendEmailVerification(to: string, code: string): Promise<void> {
     await this.send(
@@ -44,15 +50,67 @@ export class MailService {
     await this.send(to, title, body);
   }
 
+  /** Envía un correo de prueba y devuelve el resultado (sin tragarse el error). */
+  async sendTest(to: string): Promise<MailResult> {
+    return this.deliver(
+      to,
+      'Correo de prueba — Stream Music',
+      'Si recibiste este correo, la configuración de envío (SMTP) funciona. 🎉',
+    );
+  }
+
+  /** Envío de uso interno (auth, notificaciones): nunca rompe el flujo si falla. */
   private async send(to: string, subject: string, text: string): Promise<void> {
-    try {
-      await this.transporter.sendMail({ from: this.from, to, subject, text });
-      void this.logs?.record('email', `Enviado a ${to}: ${subject}`, { context: 'mail', to, ok: true });
-    } catch (err) {
-      // No romper el flujo de auth si el correo falla; se registra para diagnóstico.
-      const msg = (err as Error).message;
-      this.logger.error(`No se pudo enviar el correo a ${to}: ${msg}`);
-      void this.logs?.record('email', `Falló el envío a ${to}: ${subject}`, { context: 'mail', to, ok: false, error: msg });
+    const res = await this.deliver(to, subject, text);
+    if (!res.ok) this.logger.error(`No se pudo enviar el correo a ${to}: ${res.error}`);
+  }
+
+  private async deliver(to: string, subject: string, text: string): Promise<MailResult> {
+    const cfg = await this.resolveConfig();
+
+    if (cfg.transport === 'log') {
+      this.logger.log(`[mail:log] ${to} — ${subject}`);
+      void this.logs?.record('email', `(log) ${to}: ${subject}`, { context: 'mail', to, ok: true });
+      return { ok: true };
     }
+
+    if (!cfg.host) {
+      const error = 'SMTP no configurado (falta el host)';
+      void this.logs?.record('email', `Falló el envío a ${to}: ${error}`, { context: 'mail', to, ok: false, error });
+      return { ok: false, error };
+    }
+
+    try {
+      const transporter = createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: cfg.user ? { user: cfg.user, pass: cfg.pass } : undefined,
+      });
+      await transporter.sendMail({ from: cfg.from, to, subject, text });
+      void this.logs?.record('email', `Enviado a ${to}: ${subject}`, { context: 'mail', to, ok: true });
+      return { ok: true };
+    } catch (err) {
+      const error = (err as Error).message;
+      void this.logs?.record('email', `Falló el envío a ${to}: ${subject}`, { context: 'mail', to, ok: false, error });
+      return { ok: false, error };
+    }
+  }
+
+  /** Resuelve la config efectiva de correo: settings en DB con fallback al `.env`. */
+  private async resolveConfig(): Promise<ResolvedMail> {
+    const envMail = this.config.get<MailConfig>('mail');
+    return {
+      transport: await this.settings.get<string>('mail.transport', 'smtp'),
+      host: await this.settings.get<string>('mail.host', envMail?.host ?? ''),
+      port: await this.settings.getNumber('mail.port', envMail?.port ?? 587),
+      secure: await this.settings.getBoolean('mail.secure', false),
+      user: await this.settings.get<string>('mail.user', ''),
+      pass: await this.settings.get<string>('mail.pass', ''),
+      from: `${await this.settings.get<string>('mail.fromName', 'Stream Music')} <${await this.settings.get<string>(
+        'mail.fromAddress',
+        envMail?.from ?? 'no-reply@streammusic.local',
+      )}>`,
+    };
   }
 }

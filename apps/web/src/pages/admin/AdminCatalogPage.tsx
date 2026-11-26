@@ -4,8 +4,11 @@ import { useDebounce } from '../../lib/use-debounce';
 import { Column, DataTable } from '../../features/admin/DataTable';
 import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
+import { AlbumCreateDialog } from '../../features/admin/AlbumCreateDialog';
 import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
+import { LyricsEditDialog } from '../../features/admin/LyricsEditDialog';
 import { ChannelEditorDialog } from '../../features/admin/ChannelEditorDialog';
+import { MediaPickerDialog } from '../../features/media/MediaPickerDialog';
 import { Tabs } from '../../components/Tabs';
 import {
   useAdminAlbums,
@@ -19,16 +22,12 @@ import {
   useDeleteArtist,
   useDeleteChannel,
   useDeleteGenre,
-  useDeleteLyrics,
   useDeleteTrack,
   useRefreshChannels,
-  useTrackLyrics,
   useUpdateAlbum,
   useUpdateArtist,
   useUpdateTrack,
-  useUploadImage,
   useUpdateGenre,
-  useUpsertLyrics,
   type AdminChannel,
   type GenreStats,
 } from '../../features/admin/catalog-admin-queries';
@@ -113,7 +112,8 @@ function EditableText({ value, onSave }: { value: string; onSave: (v: string) =>
   );
 }
 
-function ImageCell({ image, onPick, uploading }: { image?: string | null; onPick: (f: File) => void; uploading: boolean }) {
+function ImageCell({ image, onSelect }: { image?: string | null; onSelect: (url: string) => void }) {
+  const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-2">
       {image ? (
@@ -121,18 +121,22 @@ function ImageCell({ image, onPick, uploading }: { image?: string | null; onPick
       ) : (
         <div className="h-9 w-9 rounded bg-chip" />
       )}
-      <label className="cursor-pointer text-xs text-brand-secondary hover:underline">
-        {uploading ? '…' : 'Cambiar'}
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) onPick(f);
-          }}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-brand-secondary hover:underline"
+      >
+        Cambiar
+      </button>
+      {open && (
+        <MediaPickerDialog
+          kind="image"
+          scope="all"
+          title="Seleccionar imagen"
+          onSelect={({ url }) => onSelect(url)}
+          onClose={() => setOpen(false)}
         />
-      </label>
+      )}
     </div>
   );
 }
@@ -145,21 +149,11 @@ function ArtistsTab() {
   const create = useCreateArtist();
   const del = useDeleteArtist();
   const update = useUpdateArtist();
-  const upload = useUploadImage();
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
-
-  const pick = (id: string, file: File) => {
-    setBusyId(id);
-    upload.mutate(file, {
-      onSuccess: (url) => update.mutate({ id, image: url }, { onSettled: () => setBusyId(null) }),
-      onError: () => setBusyId(null),
-    });
-  };
 
   type Row = Artist & { slug?: string; verified?: boolean };
   const columns: Column<Row>[] = [
-    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} uploading={busyId === a._id} onPick={(f) => pick(a._id, f)} /> },
+    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'slug', header: 'Slug' },
     { key: 'verified', header: 'Verificado', render: (a) => (a.verified ? '✓' : '—') },
@@ -201,25 +195,24 @@ function AlbumsTab() {
   const { data, isLoading } = useAdminAlbums(q, page);
   const update = useUpdateAlbum();
   const del = useDeleteAlbum();
-  const upload = useUploadImage();
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
-
-  const pick = (id: string, file: File) => {
-    setBusyId(id);
-    upload.mutate(file, {
-      onSuccess: (url) => update.mutate({ id, image: url }, { onSettled: () => setBusyId(null) }),
-      onError: () => setBusyId(null),
-    });
-  };
+  const [creating, setCreating] = useState(false);
 
   const columns: Column<Album>[] = [
-    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} uploading={busyId === a._id} onPick={(f) => pick(a._id, f)} /> },
+    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'artists', header: 'Artistas', render: (a) => a.artists?.map((ar) => ar.name).join(', ') },
   ];
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={() => setCreating(true)}
+          className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light"
+        >
+          Nuevo álbum
+        </button>
+      </div>
       <DataTable
         columns={columns}
         rows={data?.data ?? []}
@@ -243,39 +236,7 @@ function AlbumsTab() {
         )}
       />
       {editId && <AlbumEditDialog albumId={editId} onClose={() => setEditId(null)} />}
-    </div>
-  );
-}
-
-function LyricsEditor({ trackId }: { trackId: string }) {
-  const { data } = useTrackLyrics(trackId, true);
-  const upsert = useUpsertLyrics();
-  const del = useDeleteLyrics();
-  const [text, setText] = useState('');
-  useEffect(() => setText(data?.text ?? ''), [data]);
-  return (
-    <div className="mt-2 space-y-2 rounded-lg bg-chip p-3">
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={5}
-        placeholder="Letra de la pista…"
-        className="w-full rounded border border-divider bg-surface px-2 py-1 text-sm outline-none focus:border-brand-secondary"
-      />
-      <div className="flex gap-2">
-        <button
-          onClick={() => upsert.mutate({ id: trackId, text })}
-          disabled={!text.trim() || upsert.isPending}
-          className="rounded-full bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-        >
-          Guardar letra
-        </button>
-        {data && (
-          <button onClick={() => del.mutate(trackId)} className="rounded-full border border-divider px-4 py-1.5 text-xs text-muted hover:border-red-500 hover:text-red-500">
-            Quitar letra
-          </button>
-        )}
-      </div>
+      {creating && <AlbumCreateDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }
@@ -314,7 +275,7 @@ function TracksTab() {
               Editar
             </button>
             <button
-              onClick={() => setLyricsFor(lyricsFor === t._id ? null : t._id)}
+              onClick={() => setLyricsFor(t._id)}
               className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary"
             >
               Letra
@@ -325,12 +286,11 @@ function TracksTab() {
       />
       {editId && <TrackEditDialog trackId={editId} onClose={() => setEditId(null)} />}
       {lyricsFor && (
-        <div>
-          <p className="text-sm font-medium">
-            Letra de: {data?.data.find((t) => t._id === lyricsFor)?.name}
-          </p>
-          <LyricsEditor trackId={lyricsFor} />
-        </div>
+        <LyricsEditDialog
+          trackId={lyricsFor}
+          trackName={data?.data.find((t) => t._id === lyricsFor)?.name ?? ''}
+          onClose={() => setLyricsFor(null)}
+        />
       )}
     </div>
   );
@@ -341,24 +301,14 @@ function GenresTab() {
   const create = useCreateGenre();
   const update = useUpdateGenre();
   const del = useDeleteGenre();
-  const upload = useUploadImage();
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-
-  const pick = (id: string, file: File) => {
-    setBusyId(id);
-    upload.mutate(file, {
-      onSuccess: (url) => update.mutate({ id, image: url }, { onSettled: () => setBusyId(null) }),
-      onError: () => setBusyId(null),
-    });
-  };
 
   const rows = (data ?? []).filter((g) =>
     search.trim() ? g.displayName.toLowerCase().includes(search.trim().toLowerCase()) : true,
   );
 
   const columns: Column<GenreStats>[] = [
-    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} uploading={busyId === g._id} onPick={(f) => pick(g._id, f)} /> },
+    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} onSelect={(url) => update.mutate({ id: g._id, image: url })} /> },
     { key: 'displayName', header: 'Nombre', render: (g) => <EditableText value={g.displayName} onSave={(displayName) => update.mutate({ id: g._id, displayName })} /> },
     { key: 'name', header: 'Slug', render: (g) => <span className="text-muted">{g.name}</span> },
     { key: 'artistsCount', header: 'Artistas', render: (g) => <span className="tabular-nums">{g.artistsCount}</span> },

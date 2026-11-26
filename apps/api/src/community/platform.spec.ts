@@ -132,6 +132,20 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       expect(after.data.find((n) => String(n._id) === String(first._id))?.readAt).toBeTruthy();
     });
 
+    it('preferencias de email por categoría: default todo en true, guarda y lee parcial', async () => {
+      const def = await notifications.getPreferences(userId);
+      expect(def.emailNotifications).toBe(true);
+      expect(def.categories).toEqual({ social: true, backstage: true, announcements: true });
+
+      const saved = await notifications.setPreferences(userId, {
+        emailNotifications: false,
+        categories: { announcements: false },
+      });
+      expect(saved.emailNotifications).toBe(false);
+      expect(saved.categories.announcements).toBe(false);
+      expect(saved.categories.social).toBe(true); // las no enviadas no cambian
+    });
+
     it('broadcast: cuenta la audiencia y entrega a cada usuario activo', async () => {
       const all = await notifications.countAudience({ kind: 'all' });
       expect(all).toBeGreaterThanOrEqual(2); // user + admin
@@ -175,6 +189,18 @@ describe('Admin & plataforma (e2e, in-memory Mongo)', () => {
       await comments.hide(String(reply._id));
       const after = await comments.listForContent('artist', trackId, 1, 20);
       expect(after.data.length).toBe(1); // el oculto no aparece
+    });
+
+    it('ancla comentarios de pista a un timestamp (solo raíz y solo en pistas)', async () => {
+      const tId = String((await artistModel.create({ name: 'TT', slug: 'tt-' + Date.now() }))._id);
+      const timed = await comments.create(userId, 'track', tId, 'En el drop', undefined, 42.7);
+      expect(timed.timestamp).toBe(43); // redondeado
+
+      const reply = await comments.create(userId, 'track', tId, 'respuesta', String(timed._id), 10);
+      expect(reply.timestamp).toBeNull(); // las respuestas no se anclan
+
+      const onArtist = await comments.create(userId, 'artist', tId, 'x', undefined, 10);
+      expect(onArtist.timestamp).toBeNull(); // sólo pistas
     });
 
     it('respeta el ajuste commentsEnabled', async () => {

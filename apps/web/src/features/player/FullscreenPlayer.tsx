@@ -38,6 +38,32 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  const isYoutube = track?.srcType === 'youtube';
+  const videoSlotRef = useRef<HTMLDivElement | null>(null);
+
+  // Mientras el overlay está abierto en una pista de YouTube, se ubica el video
+  // (iframe único del player) sobre este slot, midiéndolo y guardándolo en el store.
+  useEffect(() => {
+    const setVideoBox = usePlayerStore.getState().setVideoBox;
+    if (!open || !isYoutube) {
+      setVideoBox(null);
+      return;
+    }
+    const measure = () => {
+      const el = videoSlotRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setVideoBox({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+    const raf = requestAnimationFrame(measure);
+    window.addEventListener('resize', measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', measure);
+      setVideoBox(null);
+    };
+  }, [open, isYoutube, track?._id]);
+
   if (!open || !track) return null;
   const artwork = track.image ?? track.album?.image ?? null;
   const total = duration || track.duration || 0;
@@ -55,8 +81,13 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-8 overflow-hidden px-6 pb-8 md:flex-row md:items-center">
         {/* Artwork + info + controles */}
         <div className="flex min-w-0 flex-1 flex-col items-center gap-6">
-          <div className="aspect-square w-full max-w-sm overflow-hidden rounded-2xl bg-chip shadow-2xl">
-            {artwork ? (
+          <div
+            ref={videoSlotRef}
+            className={`w-full overflow-hidden rounded-2xl bg-chip shadow-2xl ${
+              isYoutube ? 'aspect-video max-w-2xl' : 'aspect-square max-w-sm'
+            }`}
+          >
+            {isYoutube ? null : artwork ? (
               <img src={artwork} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-gradient-to-br from-brand-primary to-brand-accent" />

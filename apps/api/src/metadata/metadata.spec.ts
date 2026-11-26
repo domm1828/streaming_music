@@ -9,6 +9,7 @@ import configuration from '../config/configuration';
 import { StorageModule } from '../storage/storage.module';
 import { Artist } from '../catalog/schemas/artist.schema';
 import { Track } from '../catalog/schemas/track.schema';
+import { SettingsModule } from '../settings/settings.module';
 import { MetadataModule } from './metadata.module';
 import { ImportService } from './import.service';
 import { LyricsImportService } from './lyrics-import.service';
@@ -92,6 +93,7 @@ describe('Metadata import (e2e, in-memory Mongo, proveedores mockeados)', () => 
         ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
         EventEmitterModule.forRoot(),
         MongooseModule.forRoot(mongod.getUri()),
+        SettingsModule,
         StorageModule,
         MetadataModule,
       ],

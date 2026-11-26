@@ -1,0 +1,18 @@
+{
+  "identities": [
+    {
+      "name": "anonymous",
+      "actions": ["Read", "List"]
+    },
+    {
+      "name": "stream-music",
+      "credentials": [
+        {
+          "accessKey": "streammusic",
+          "secretKey": "streammusic-secret-change-me"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

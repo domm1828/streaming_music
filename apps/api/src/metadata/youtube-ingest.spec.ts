@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import configuration from '../config/configuration';
 import { StorageModule } from '../storage/storage.module';
 import { Track } from '../catalog/schemas/track.schema';
+import { SettingsModule } from '../settings/settings.module';
 import { MetadataModule } from './metadata.module';
 import { YoutubeIngestService } from './youtube-ingest.service';
 import { YOUTUBE_DOWNLOADER, YoutubeDownloader, parseYoutubeId } from './youtube-downloader';
@@ -52,6 +53,7 @@ describe('Importar audio de YouTube', () => {
           ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
           EventEmitterModule.forRoot(),
           MongooseModule.forRoot(mongod.getUri()),
+          SettingsModule,
           StorageModule,
           MetadataModule,
         ],

@@ -1,6 +1,7 @@
 import { Download, ListMusic, Maximize2, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'react-router';
 import { IconButton } from '../../components/IconButton';
+import { usePublicSettings } from '../auth/auth-queries';
 import { LikeButton } from '../social/LikeButton';
 import { currentTrack, usePlayerStore } from './player-store';
 
@@ -32,6 +33,7 @@ export function PlayerBar({
   const shuffle = usePlayerStore((s) => s.shuffle);
   const volume = usePlayerStore((s) => s.volume);
   const { togglePlay, next, prev, seekTo, setVolume, cycleRepeat, toggleShuffle } = usePlayerStore.getState();
+  const player = usePublicSettings()?.player;
 
   if (!track) return null;
   const artwork = track.image ?? track.album?.image ?? null;
@@ -103,7 +105,7 @@ export function PlayerBar({
 
         {/* Derecha: cola + descarga + volumen */}
         <div className="flex flex-1 items-center justify-end gap-1">
-          {track.srcType === 'audio' && track.src && (
+          {player?.enableDownload !== false && track.srcType === 'audio' && track.src && (
             <a
               href={track.src}
               download={track.name}
@@ -113,15 +115,21 @@ export function PlayerBar({
               <Download size={16} />
             </a>
           )}
-          <IconButton size="sm" active={lyricsOpen} onClick={onToggleLyrics} aria-label="Letra" className="hidden lg:inline-flex">
-            <Mic2 size={16} />
-          </IconButton>
-          <IconButton size="sm" onClick={onExpand} aria-label="Pantalla completa">
-            <Maximize2 size={16} />
-          </IconButton>
-          <IconButton size="sm" active={queueOpen} onClick={onToggleQueue} aria-label="Cola" className="hidden lg:inline-flex">
-            <ListMusic size={16} />
-          </IconButton>
+          {player?.hideLyrics !== true && (
+            <IconButton size="sm" active={lyricsOpen} onClick={onToggleLyrics} aria-label="Letra" className="hidden lg:inline-flex">
+              <Mic2 size={16} />
+            </IconButton>
+          )}
+          {player?.hideFullscreen !== true && (
+            <IconButton size="sm" onClick={onExpand} aria-label="Pantalla completa">
+              <Maximize2 size={16} />
+            </IconButton>
+          )}
+          {player?.hideQueue !== true && (
+            <IconButton size="sm" active={queueOpen} onClick={onToggleQueue} aria-label="Cola" className="hidden lg:inline-flex">
+              <ListMusic size={16} />
+            </IconButton>
+          )}
           <div className="hidden items-center gap-1 md:flex">
             <button onClick={() => setVolume(volume > 0 ? 0 : 0.8)} className="rounded-full p-2 text-muted hover:text-main" aria-label="Silenciar">
               {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}

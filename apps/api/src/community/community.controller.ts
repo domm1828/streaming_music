@@ -43,7 +43,7 @@ export class CommunityController {
   @Post('comments')
   @UseGuards(JwtAuthGuard)
   create(@Body() dto: CreateCommentDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.comments.create(user.id, dto.type, dto.id, dto.content, dto.parentId);
+    return this.comments.create(user.id, dto.type, dto.id, dto.content, dto.parentId, dto.timestamp);
   }
 
   @Post('comments/:id/vote')

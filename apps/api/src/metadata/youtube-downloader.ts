@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import ytdl from '@distube/ytdl-core';
+import type { Readable } from 'node:stream';
 
 export interface YoutubeAudioInfo {
   id: string;
@@ -50,14 +50,51 @@ export function parseYoutubeId(input: string): string {
   return id;
 }
 
-/** Implementación real con @distube/ytdl-core (descarga el mejor stream audio-only, sin ffmpeg). */
+/* --- Tipos mínimos de @distube/ytdl-core v5 (paquete ESM-only, cargado dinámicamente). --- */
+interface YtFormat {
+  itag: number;
+  container?: string;
+  hasAudio?: boolean;
+  hasVideo?: boolean;
+  audioBitrate?: number | null;
+  bitrate?: number | null;
+}
+interface YtVideoInfo {
+  videoDetails: { title: string; author?: { name?: string } | null; lengthSeconds: string | number };
+  formats: YtFormat[];
+}
+interface YtClient {
+  getInfo(video: string): Promise<YtVideoInfo>;
+  download(video: YtVideoInfo, options: { filter: (f: YtFormat) => boolean }): Readable;
+}
+interface YtModule {
+  Ytdl: new () => YtClient;
+}
+
+/**
+ * Importa el paquete ESM-only desde un build CommonJS. Se envuelve en `Function`
+ * para que TypeScript no reescriba el `import()` dinámico a `require()`, que
+ * fallaría contra un módulo ESM.
+ */
+const importEsm = new Function('specifier', 'return import(specifier)') as (s: string) => Promise<YtModule>;
+
+/** Implementación real con @distube/ytdl-core v5 (stream de audio-only, sin ffmpeg). */
 @Injectable()
 export class YtdlDownloader implements YoutubeDownloader {
   private readonly MAX_SECONDS = 20 * 60;
   private readonly MAX_BYTES = 60 * 1024 * 1024;
+  private clientPromise: Promise<YtClient> | null = null;
+
+  private client(): Promise<YtClient> {
+    if (!this.clientPromise) {
+      this.clientPromise = importEsm('@distube/ytdl-core').then((m) => new m.Ytdl());
+    }
+    return this.clientPromise;
+  }
 
   async info(id: string): Promise<YoutubeAudioInfo> {
-    const info = await ytdl.getBasicInfo(id);
+    const yt = await this.client();
+    const info = await yt.getInfo(id);
     const d = info.videoDetails;
     return {
       id,
@@ -68,14 +105,20 @@ export class YtdlDownloader implements YoutubeDownloader {
   }
 
   async downloadAudio(id: string): Promise<{ buffer: Buffer; ext: 'm4a' | 'webm' }> {
-    const info = await ytdl.getInfo(id);
+    const yt = await this.client();
+    const info = await yt.getInfo(id);
     if (Number(info.videoDetails.lengthSeconds) > this.MAX_SECONDS) {
       throw new BadRequestException('El video supera la duración máxima permitida (20 min)');
     }
-    const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+
+    const audio = info.formats
+      .filter((f) => f.hasAudio && !f.hasVideo)
+      .sort((a, b) => Number(b.audioBitrate ?? b.bitrate ?? 0) - Number(a.audioBitrate ?? a.bitrate ?? 0));
+    const format = audio[0];
+    if (!format) throw new BadRequestException('No se encontró un formato de audio para el video');
     const ext: 'm4a' | 'webm' = format.container === 'webm' ? 'webm' : 'm4a';
 
-    const stream = ytdl.downloadFromInfo(info, { format });
+    const stream = yt.download(info, { filter: (f) => f.itag === format.itag });
     const chunks: Buffer[] = [];
     let total = 0;
     await new Promise<void>((resolve, reject) => {

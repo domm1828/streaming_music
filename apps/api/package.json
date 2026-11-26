@@ -1,6 +1,6 @@
 {
   "name": "@stream-music/api",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Stream Music — API (NestJS)",
   "scripts": {
@@ -10,12 +10,13 @@
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "seed": "nest build && node dist/seed.js",
+    "seed:prod": "nest build && node dist/seed-admin.js",
     "test": "vitest run"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1176.0",
     "@aws-sdk/s3-request-presigner": "^3.1176.0",
-    "@distube/ytdl-core": "^4.16.12",
+    "@distube/ytdl-core": "^5.2.1",
     "@nestjs/common": "^12.0.0",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^12.0.0",

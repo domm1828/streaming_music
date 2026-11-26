@@ -11,6 +11,38 @@ export interface StoredFile {
   absolutePath: string;
 }
 
+const CONTENT_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+  '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.oga': 'audio/ogg',
+  '.opus': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.flac': 'audio/flac',
+  '.weba': 'audio/webm',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.m3u8': 'application/vnd.apple.mpegurl',
+  '.ts': 'video/mp2t',
+  '.json': 'application/json',
+};
+
+/** Tipo MIME a partir de la extensión (para servir assets desde S3 con el Content-Type correcto). */
+function contentTypeFor(filename: string): string | undefined {
+  const dot = filename.lastIndexOf('.');
+  if (dot < 0) return undefined;
+  return CONTENT_TYPES[filename.slice(dot).toLowerCase()];
+}
+
 /**
  * Abstracción de almacenamiento con driver local (por defecto) o S3.
  * Expone URLs firmadas para archivos privados.
@@ -22,6 +54,7 @@ export class StorageService {
   private readonly publicBase: string;
   private readonly cfg: StorageConfig;
   private s3Client: S3Client | null = null;
+  private bucketReady: Promise<void> | null = null;
   // Cargados perezosamente para no pagar el costo del SDK si se usa el driver local.
   private s3Mod: typeof import('@aws-sdk/client-s3') | null = null;
   private presignMod: typeof import('@aws-sdk/s3-request-presigner') | null = null;
@@ -56,14 +89,49 @@ export class StorageService {
         credentials: { accessKeyId: this.cfg.s3AccessKey, secretAccessKey: this.cfg.s3SecretKey },
       });
     }
+    if (!this.bucketReady) this.bucketReady = this.ensureBucket(this.s3Client, this.s3Mod!);
+    await this.bucketReady;
     return { client: this.s3Client, mod: this.s3Mod!, presign: this.presignMod! };
+  }
+
+  /** Crea el bucket si no existe (idempotente; sirve para SeaweedFS/MinIO). */
+  private async ensureBucket(client: S3Client, mod: typeof import('@aws-sdk/client-s3')): Promise<void> {
+    try {
+      await client.send(new mod.HeadBucketCommand({ Bucket: this.cfg.s3Bucket }));
+    } catch {
+      try {
+        await client.send(new mod.CreateBucketCommand({ Bucket: this.cfg.s3Bucket }));
+        this.logger.log(`Bucket S3 "${this.cfg.s3Bucket}" creado`);
+      } catch (err) {
+        this.logger.warn(`No se pudo asegurar el bucket "${this.cfg.s3Bucket}": ${(err as Error).message}`);
+      }
+    }
+  }
+
+  /** URL pública navegable de un asset (resuelve S3 vs local). */
+  publicUrl(publicPath: string, origin?: string): string {
+    if (this.cfg.driver === 's3') {
+      const relative = this.publicToRelative(publicPath);
+      const base = this.cfg.s3PublicUrl
+        ? this.cfg.s3PublicUrl.replace(/\/$/, '')
+        : this.cfg.s3Endpoint
+          ? `${this.cfg.s3Endpoint.replace(/\/$/, '')}/${this.cfg.s3Bucket}`
+          : '';
+      return base ? `${base}/${relative}` : publicPath;
+    }
+    return origin ? `${origin.replace(/\/$/, '')}${publicPath}` : publicPath;
   }
 
   async saveBuffer(buffer: Buffer, subdir: string, filename: string): Promise<StoredFile> {
     const relative = `${subdir}/${filename}`;
     if (this.cfg.driver === 's3') {
       const { client, mod } = await this.s3();
-      const cmd: PutObjectCommand = new mod.PutObjectCommand({ Bucket: this.cfg.s3Bucket, Key: relative, Body: buffer });
+      const cmd: PutObjectCommand = new mod.PutObjectCommand({
+        Bucket: this.cfg.s3Bucket,
+        Key: relative,
+        Body: buffer,
+        ContentType: contentTypeFor(filename),
+      });
       await client.send(cmd);
       return { publicPath: `${this.publicBase}/${relative}`, absolutePath: relative };
     }
@@ -101,6 +169,8 @@ export class StorageService {
   async signedUrl(publicPath: string, ttlSeconds = 3600): Promise<string> {
     const relative = this.publicToRelative(publicPath);
     if (this.cfg.driver === 's3') {
+      // Bucket de lectura pública (CDN/anónimo, p. ej. SeaweedFS): la URL pública ya sirve.
+      if (this.cfg.s3PublicRead) return this.publicUrl(publicPath);
       const { client, mod, presign } = await this.s3();
       const cmd: GetObjectCommand = new mod.GetObjectCommand({ Bucket: this.cfg.s3Bucket, Key: relative });
       return presign.getSignedUrl(client, cmd, { expiresIn: ttlSeconds });
