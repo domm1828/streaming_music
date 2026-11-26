@@ -162,6 +162,20 @@ export function useUpdateAlbum() {
     },
   });
 }
+export function useCreateAlbum() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: {
+      name: string;
+      image?: string;
+      description?: string;
+      releaseDate?: string;
+      artists?: string[];
+      genres?: string[];
+    }) => mutate<Album>('post', 'albums', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-albums'] }),
+  });
+}
 export function useReorderAlbumTracks(albumId: string) {
   const qc = useQueryClient();
   return useMutation({
