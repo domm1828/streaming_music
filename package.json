@@ -14,6 +14,8 @@
     "dev": "npm run dev --workspace @stream-music/api & npm run dev --workspace @stream-music/web",
     "dev:api": "npm run dev --workspace @stream-music/api",
     "dev:web": "npm run dev --workspace @stream-music/web",
+    "seed": "npm run seed --workspace @stream-music/api",
+    "seed:prod": "npm run seed:prod --workspace @stream-music/api",
     "build": "npm run build --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
