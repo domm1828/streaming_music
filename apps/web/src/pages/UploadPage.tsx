@@ -8,9 +8,9 @@ import {
   useCreateTrack,
   useDeleteMyTrack,
   useMyTracks,
-  useUploadImage,
   useUploadTrackAudio,
 } from '../features/creator/creator-queries';
+import { MediaPickerDialog } from '../features/media/MediaPickerDialog';
 import type { Genre } from '../features/catalog/types';
 
 const field = 'w-full rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary';
@@ -32,12 +32,17 @@ function GenrePicker({ genres, selected, onToggle }: { genres: Genre[]; selected
   );
 }
 
-function CoverInput({ image, uploading, onPick, label = 'Carátula' }: { image: string | null; uploading: boolean; onPick: (f: File) => void; label?: string }) {
+function CoverInput({ image, onChange, label = 'Carátula' }: { image: string | null; onChange: (url: string) => void; label?: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <label className="relative block h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-lg bg-chip">
-      {image ? <img src={image} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center px-1 text-center text-[10px] text-muted">{uploading ? '…' : label}</span>}
-      <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); }} />
-    </label>
+    <>
+      <button type="button" onClick={() => setOpen(true)} className="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-chip">
+        {image ? <img src={image} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full items-center justify-center px-1 text-center text-[10px] text-muted">{label}</span>}
+      </button>
+      {open && (
+        <MediaPickerDialog kind="image" scope="mine" title={`Seleccionar ${label.toLowerCase()}`} onSelect={({ url }) => onChange(url)} onClose={() => setOpen(false)} />
+      )}
+    </>
   );
 }
 
@@ -52,7 +57,6 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
 
   const createTrack = useCreateTrack();
   const uploadAudio = useUploadTrackAudio();
-  const uploadImage = useUploadImage();
 
   const save = async () => {
     setStatus('saving');
@@ -76,7 +80,7 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
   return (
     <div className="rounded-panel border border-divider p-4">
       <div className="flex items-start gap-4">
-        <CoverInput image={image} uploading={uploadImage.isPending} onPick={(f) => uploadImage.mutate(f, { onSuccess: setImage })} />
+        <CoverInput image={image} onChange={setImage} />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <Music size={16} className="shrink-0 text-muted" />
@@ -116,7 +120,6 @@ function AlbumForm({ files, genres, onClear }: { files: File[]; genres: Genre[];
   const createAlbum = useCreateAlbum();
   const createTrack = useCreateTrack();
   const uploadAudio = useUploadTrackAudio();
-  const uploadImage = useUploadImage();
 
   const create = async () => {
     if (!name.trim()) return setError('Poné un nombre al álbum.');
@@ -163,7 +166,7 @@ function AlbumForm({ files, genres, onClear }: { files: File[]; genres: Genre[];
   return (
     <div className="space-y-3 rounded-panel border border-divider p-4">
       <div className="flex items-start gap-4">
-        <CoverInput image={image} uploading={uploadImage.isPending} onPick={(f) => uploadImage.mutate(f, { onSuccess: setImage })} label="Portada" />
+        <CoverInput image={image} onChange={setImage} label="Portada" />
         <div className="min-w-0 flex-1 space-y-2">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del álbum" className={field} />
           <div className="flex gap-2">

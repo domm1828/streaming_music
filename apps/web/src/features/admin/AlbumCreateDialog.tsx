@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useDebounce } from '../../lib/use-debounce';
 import { useArtists, useGenres } from '../catalog/catalog-queries';
-import { useCreateAlbum, useUploadImage } from './catalog-admin-queries';
+import { useCreateAlbum } from './catalog-admin-queries';
+import { MediaField } from '../media/MediaField';
 
 const field = 'w-full rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary';
 
@@ -15,7 +16,6 @@ interface Ref {
 export function AlbumCreateDialog({ onClose }: { onClose: () => void }) {
   const genresQuery = useGenres();
   const create = useCreateAlbum();
-  const upload = useUploadImage();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -61,25 +61,7 @@ export function AlbumCreateDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {image ? (
-            <img src={image} alt="" className="h-16 w-16 rounded object-cover" />
-          ) : (
-            <div className="h-16 w-16 rounded bg-chip" />
-          )}
-          <label className="cursor-pointer text-sm text-brand-secondary hover:underline">
-            {upload.isPending ? 'Subiendo…' : 'Subir portada'}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) upload.mutate(f, { onSuccess: (url) => setImage(url) });
-              }}
-            />
-          </label>
-        </div>
+        <MediaField value={image} onChange={setImage} label="Portada" />
 
         <div>
           <label className="mb-1 block text-xs font-medium text-muted">Nombre</label>
