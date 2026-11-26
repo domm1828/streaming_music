@@ -59,6 +59,10 @@ export interface StorageConfig {
   s3Bucket: string;
   s3AccessKey: string;
   s3SecretKey: string;
+  /** Base pública para construir URLs navegables de assets (driver s3). */
+  s3PublicUrl: string;
+  /** El bucket sirve objetos con lectura pública (CDN/anónimo): entrega URLs públicas en vez de presigned. */
+  s3PublicRead: boolean;
   /** Secreto para firmar URLs de archivos privados (driver local). */
   signingSecret: string;
 }
@@ -122,6 +126,8 @@ export default (): {
     s3Bucket: process.env.S3_BUCKET ?? '',
     s3AccessKey: process.env.S3_ACCESS_KEY ?? '',
     s3SecretKey: process.env.S3_SECRET_KEY ?? '',
+    s3PublicUrl: process.env.S3_PUBLIC_URL ?? '',
+    s3PublicRead: process.env.S3_PUBLIC_READ === 'true',
     signingSecret: process.env.STORAGE_SIGNING_SECRET ?? process.env.JWT_ACCESS_SECRET ?? 'dev-signing-secret',
   },
 });
