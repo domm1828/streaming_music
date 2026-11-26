@@ -20,7 +20,9 @@ export const CHANNEL_SOURCE_TYPES: ChannelSourceType[] = [
   'manual',
 ];
 
-export type ChannelLayout = 'grid' | 'carousel' | 'list';
+export type ChannelLayout = 'grid' | 'carousel' | 'list' | 'trackTable';
+
+export const CHANNEL_LAYOUTS: ChannelLayout[] = ['grid', 'carousel', 'list', 'trackTable'];
 
 /** Ref de contenido para channels de fuente 'manual'. */
 @Schema({ _id: false })
@@ -45,7 +47,7 @@ export class ChannelConfig {
   @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
   params!: Record<string, unknown>;
 
-  @Prop({ type: String, enum: ['grid', 'carousel', 'list'], default: 'grid' })
+  @Prop({ type: String, enum: CHANNEL_LAYOUTS, default: 'grid' })
   layout!: ChannelLayout;
 }
 const ChannelConfigSchema = SchemaFactory.createForClass(ChannelConfig);

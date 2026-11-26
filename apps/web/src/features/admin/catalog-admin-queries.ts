@@ -11,7 +11,7 @@ export type ChannelSourceType =
   | 'genreTracks'
   | 'publicPlaylists'
   | 'manual';
-export type ChannelLayout = 'grid' | 'carousel' | 'list';
+export type ChannelLayout = 'grid' | 'carousel' | 'list' | 'trackTable';
 export interface ChannelContentItem {
   refType: 'track' | 'album' | 'artist' | 'playlist';
   refId: string;
