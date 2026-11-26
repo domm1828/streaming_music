@@ -24,7 +24,7 @@ const SOURCES: { value: ChannelSourceType; label: string }[] = [
   { value: 'publicPlaylists', label: 'Playlists públicas' },
   { value: 'manual', label: 'Manual (contenido elegido)' },
 ];
-const LAYOUTS: ChannelLayout[] = ['grid', 'carousel', 'list'];
+const LAYOUTS: ChannelLayout[] = ['grid', 'carousel', 'list', 'trackTable'];
 const CONTENT_TYPES: ChannelContentItem['refType'][] = ['track', 'album', 'artist', 'playlist'];
 
 interface ContentRow extends ChannelContentItem {

@@ -11,7 +11,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { CHANNEL_SOURCE_TYPES, ChannelLayout, ChannelSourceType } from '../schemas/channel.schema';
+import { CHANNEL_LAYOUTS, CHANNEL_SOURCE_TYPES, ChannelLayout, ChannelSourceType } from '../schemas/channel.schema';
 
 export class ChannelConfigDto {
   @IsEnum(CHANNEL_SOURCE_TYPES)
@@ -21,7 +21,7 @@ export class ChannelConfigDto {
   @IsOptional()
   params?: Record<string, unknown>;
 
-  @IsEnum(['grid', 'carousel', 'list'])
+  @IsEnum(CHANNEL_LAYOUTS)
   @IsOptional()
   layout?: ChannelLayout;
 }

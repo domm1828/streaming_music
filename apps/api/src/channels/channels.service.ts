@@ -32,7 +32,7 @@ export interface ResolvedChannelView {
 type ResolvedChannelFeed = ResolvedChannelView[];
 
 const DEFAULT_CHANNELS: CreateChannelDto[] = [
-  { name: 'Tendencias', slug: 'trending', type: 'home', position: 0, config: { sourceType: 'topTracks', layout: 'carousel', params: { limit: 12 } } },
+  { name: 'Tendencias', slug: 'trending', type: 'home', position: 0, config: { sourceType: 'topTracks', layout: 'trackTable', params: { limit: 10 } } },
   { name: 'Novedades', slug: 'new-releases', type: 'home', position: 1, config: { sourceType: 'newAlbums', layout: 'grid', params: { limit: 12 } } },
   { name: 'Artistas populares', slug: 'popular-artists', type: 'home', position: 2, config: { sourceType: 'topArtists', layout: 'grid', params: { limit: 12 } } },
   { name: 'Playlists destacadas', slug: 'featured-playlists', type: 'home', position: 3, config: { sourceType: 'publicPlaylists', layout: 'grid', params: { limit: 12 } } },

@@ -25,7 +25,7 @@ export interface SuggestResponse {
   suggestions: Suggestion[];
 }
 
-export type ChannelLayout = 'grid' | 'carousel' | 'list';
+export type ChannelLayout = 'grid' | 'carousel' | 'list' | 'trackTable';
 export type ChannelItemType = 'track' | 'album' | 'artist' | 'playlist' | 'mixed';
 
 export interface ResolvedChannel {
