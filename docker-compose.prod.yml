@@ -1,41 +1,16 @@
-# Despliegue de producción: API + SeaweedFS (en Docker).
-# Fuera de Docker, en el host del VPS:
-#   - MongoDB (la API lo alcanza por host.docker.internal).
+# Despliegue de producción: en Docker va SOLO SeaweedFS (object store S3 de los medios).
+# Todo lo demás corre en el host del VPS, fuera de Docker:
+#   - MongoDB (la API lo usa por 127.0.0.1:27017).
+#   - API NestJS con PM2 (ver ecosystem.config.cjs; lee el .env de la raíz del repo).
 #   - nginx: termina TLS, sirve el SPA (apps/web/dist) y hace de reverse proxy
-#     hacia estos contenedores (/api → :3000, /s3 → :8333). Ver docker/nginx/.
-# No incluye redis (no se usa) ni meilisearch (opcional; con driver 'auto' la
-# búsqueda cae al índice de texto de Mongo).
+#     (/api → 127.0.0.1:3000, /s3 → 127.0.0.1:8333). Ver docker/nginx/.
 #
 # Uso:
-#   cp .env.production.example .env.production   # y completá los valores
-#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#   # (opcional) secret de SeaweedFS en docker/seaweedfs/s3.json
+#   docker compose -f docker-compose.prod.yml up -d seaweedfs
 name: stream-music-prod
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    image: stream-music-api
-    container_name: stream-music-api
-    restart: unless-stopped
-    depends_on:
-      - seaweedfs
-    env_file:
-      - .env.production
-    environment:
-      PORT: '3000'
-      STORAGE_DIR: /app/storage
-    # Mapea host.docker.internal → IP del host, para alcanzar el MongoDB que
-    # corre en el VPS (fuera de Docker). En Linux requiere este mapeo explícito.
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    volumes:
-      - api-storage:/app/storage # temporales de TUS y, si se usa driver local, /uploads
-    # Publicado solo en loopback: lo consume el nginx del host, no Internet.
-    ports:
-      - '127.0.0.1:3000:3000'
-
   seaweedfs:
     image: chrislusf/seaweedfs:3.80
     container_name: stream-music-seaweedfs
@@ -44,11 +19,9 @@ services:
     volumes:
       - seaweedfs-data:/data
       - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
-    # El gateway S3 se publica en loopback para que el nginx del host lo exponga
-    # en /s3. La API lo sigue alcanzando por la red interna como 'seaweedfs:8333'.
+    # Publicado en loopback: lo consumen la API y el nginx del host, no Internet.
     ports:
       - '127.0.0.1:8333:8333'
 
 volumes:
-  api-storage:
   seaweedfs-data:
