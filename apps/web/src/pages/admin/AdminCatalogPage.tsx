@@ -5,6 +5,7 @@ import { Column, DataTable } from '../../features/admin/DataTable';
 import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
 import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
+import { LyricsEditDialog } from '../../features/admin/LyricsEditDialog';
 import { ChannelEditorDialog } from '../../features/admin/ChannelEditorDialog';
 import { Tabs } from '../../components/Tabs';
 import {
@@ -19,16 +20,13 @@ import {
   useDeleteArtist,
   useDeleteChannel,
   useDeleteGenre,
-  useDeleteLyrics,
   useDeleteTrack,
   useRefreshChannels,
-  useTrackLyrics,
   useUpdateAlbum,
   useUpdateArtist,
   useUpdateTrack,
   useUploadImage,
   useUpdateGenre,
-  useUpsertLyrics,
   type AdminChannel,
   type GenreStats,
 } from '../../features/admin/catalog-admin-queries';
@@ -247,39 +245,6 @@ function AlbumsTab() {
   );
 }
 
-function LyricsEditor({ trackId }: { trackId: string }) {
-  const { data } = useTrackLyrics(trackId, true);
-  const upsert = useUpsertLyrics();
-  const del = useDeleteLyrics();
-  const [text, setText] = useState('');
-  useEffect(() => setText(data?.text ?? ''), [data]);
-  return (
-    <div className="mt-2 space-y-2 rounded-lg bg-chip p-3">
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={5}
-        placeholder="Letra de la pista…"
-        className="w-full rounded border border-divider bg-surface px-2 py-1 text-sm outline-none focus:border-brand-secondary"
-      />
-      <div className="flex gap-2">
-        <button
-          onClick={() => upsert.mutate({ id: trackId, text })}
-          disabled={!text.trim() || upsert.isPending}
-          className="rounded-full bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-        >
-          Guardar letra
-        </button>
-        {data && (
-          <button onClick={() => del.mutate(trackId)} className="rounded-full border border-divider px-4 py-1.5 text-xs text-muted hover:border-red-500 hover:text-red-500">
-            Quitar letra
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function TracksTab() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -314,7 +279,7 @@ function TracksTab() {
               Editar
             </button>
             <button
-              onClick={() => setLyricsFor(lyricsFor === t._id ? null : t._id)}
+              onClick={() => setLyricsFor(t._id)}
               className="rounded-full border border-divider px-3 py-1 text-xs hover:border-brand-secondary"
             >
               Letra
@@ -325,12 +290,11 @@ function TracksTab() {
       />
       {editId && <TrackEditDialog trackId={editId} onClose={() => setEditId(null)} />}
       {lyricsFor && (
-        <div>
-          <p className="text-sm font-medium">
-            Letra de: {data?.data.find((t) => t._id === lyricsFor)?.name}
-          </p>
-          <LyricsEditor trackId={lyricsFor} />
-        </div>
+        <LyricsEditDialog
+          trackId={lyricsFor}
+          trackName={data?.data.find((t) => t._id === lyricsFor)?.name ?? ''}
+          onClose={() => setLyricsFor(null)}
+        />
       )}
     </div>
   );
