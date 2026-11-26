@@ -22,33 +22,37 @@ import { RolesService } from './users/roles.service';
 async function seedAdmin(): Promise<void> {
   const logger = new Logger('SeedAdmin');
 
-  const email = process.env.ADMIN_EMAIL?.trim();
-  const password = process.env.ADMIN_PASSWORD;
-  const username = process.env.ADMIN_USERNAME?.trim() || 'admin';
-  const name = process.env.ADMIN_NAME?.trim() || 'Administrador';
-  const resetPassword = process.env.ADMIN_RESET_PASSWORD === 'true';
-
-  const missing: string[] = [];
-  if (!email) missing.push('ADMIN_EMAIL');
-  if (!password) missing.push('ADMIN_PASSWORD');
-  if (missing.length) {
-    logger.error(`Faltan variables de entorno requeridas: ${missing.join(', ')}.`);
-    logger.error(
-      'Ejemplo: ADMIN_EMAIL=admin@tudominio.com ADMIN_PASSWORD="una-clave-segura" npm run seed:prod',
-    );
-    process.exitCode = 1;
-    return;
-  }
-  if ((password as string).length < 8) {
-    logger.error('ADMIN_PASSWORD debe tener al menos 8 caracteres.');
-    process.exitCode = 1;
-    return;
-  }
-
+  // Creamos el contexto primero: al inicializarse, ConfigModule carga el archivo
+  // .env (envFilePath en AppModule) hacia process.env. Si leyéramos las variables
+  // ADMIN_* antes de esto, en un despliegue basado en .env (API en el host) nunca
+  // estarían definidas todavía.
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
   try {
+    const email = process.env.ADMIN_EMAIL?.trim();
+    const password = process.env.ADMIN_PASSWORD;
+    const username = process.env.ADMIN_USERNAME?.trim() || 'admin';
+    const name = process.env.ADMIN_NAME?.trim() || 'Administrador';
+    const resetPassword = process.env.ADMIN_RESET_PASSWORD === 'true';
+
+    const missing: string[] = [];
+    if (!email) missing.push('ADMIN_EMAIL');
+    if (!password) missing.push('ADMIN_PASSWORD');
+    if (missing.length) {
+      logger.error(`Faltan variables de entorno requeridas: ${missing.join(', ')}.`);
+      logger.error(
+        'Ejemplo: ADMIN_EMAIL=admin@tudominio.com ADMIN_PASSWORD="una-clave-segura" npm run seed:prod',
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if ((password as string).length < 8) {
+      logger.error('ADMIN_PASSWORD debe tener al menos 8 caracteres.');
+      process.exitCode = 1;
+      return;
+    }
+
     const users = app.get(UsersService);
     const roles = app.get(RolesService);
 
