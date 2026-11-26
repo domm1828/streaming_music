@@ -1,0 +1,28 @@
+# Edge de Stream Music: TLS automático (Let's Encrypt), estáticos del SPA y
+# reverse proxy a la API y a SeaweedFS. El dominio llega por la variable DOMAIN.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API REST + subidas resumibles TUS (todo bajo /api/*).
+	handle /api/* {
+		reverse_proxy api:3000
+	}
+
+	# WebSocket de notificaciones en tiempo real (Socket.IO).
+	handle /socket.io/* {
+		reverse_proxy api:3000
+	}
+
+	# Assets de medios (SeaweedFS S3, lectura pública/anónima).
+	# /s3/<bucket>/<key>  ->  seaweedfs:8333/<bucket>/<key>
+	handle_path /s3/* {
+		reverse_proxy seaweedfs:8333
+	}
+
+	# SPA: sirve los estáticos y cae a index.html para el routing del cliente.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -103,6 +103,62 @@ npm run seed --workspace @stream-music/api   # usuarios, catálogo y playlist de
 Los roles por defecto (`admin`, `user`), settings, localización y páginas del CMS se
 siembran solos al primer arranque.
 
+## Despliegue en un VPS con Docker + Caddy (HTTPS)
+
+Forma recomendada y de una sola pieza. Publica todo bajo **un dominio** con **TLS
+automático** (Let's Encrypt vía Caddy). Front y API comparten origen, así que no hay
+CORS entre ellos. Servicios del stack de producción (`docker-compose.prod.yml`):
+
+| Servicio | Imagen / build | Expone | Rol |
+|---|---|---|---|
+| `caddy` | `apps/web/Dockerfile` (SPA + Caddy) | 80, 443 | TLS, sirve el SPA y hace de reverse proxy |
+| `api` | `apps/api/Dockerfile` (Node 26) | interno 3000 | API NestJS |
+| `mongo` | `mongo:7` (con `--auth`) | interno | Base de datos |
+| `seaweedfs` | `chrislusf/seaweedfs` | interno 8333 | Object store S3 de los medios |
+
+No se incluyen `redis` (no se usa) ni `meilisearch` (opcional; con `SEARCH_DRIVER=auto`
+la búsqueda cae al índice de texto de Mongo).
+
+**Ruteo del edge** (`docker/Caddyfile`): `/api/*` y `/socket.io/*` → `api:3000`;
+`/s3/*` → `seaweedfs:8333` (assets públicos); todo lo demás → SPA con fallback a
+`index.html`.
+
+### Requisitos previos
+- Un VPS con Docker + Docker Compose v2 y los puertos **80 y 443** abiertos.
+- Un registro **DNS A** de `stream.duglasm.com` apuntando a la IP del VPS (Caddy valida
+  el certificado por HTTP-01, así que el dominio ya debe resolver antes del primer arranque).
+
+### Pasos
+```bash
+# 1) Config de producción (NO se commitea; contiene secretos)
+cp .env.production.example .env.production
+#    editá: DOMAIN, CORS_ORIGIN, APP_URL, MONGO_ROOT_*, MONGODB_URI,
+#    JWT_* , STORAGE_SIGNING_SECRET, S3_* y ADMIN_*  (usá  openssl rand -base64 48)
+
+# 2) Cambiá el secret por defecto de SeaweedFS en docker/seaweedfs/s3.json
+#    (debe coincidir con S3_SECRET_KEY del .env.production)
+
+# 3) Build + arranque
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+
+# 4) Admin inicial (seeder de producción, idempotente)
+docker compose -f docker-compose.prod.yml exec api node apps/api/dist/seed-admin.js
+#    toma ADMIN_EMAIL / ADMIN_PASSWORD del entorno del contenedor (ya en .env.production)
+
+# 5) Verificar
+curl -sS https://stream.duglasm.com/api/v1/health      # {status: ok, database: connected}
+```
+
+El primer arranque de Caddy tarda unos segundos en emitir el certificado. Logs:
+`docker compose -f docker-compose.prod.yml logs -f caddy`.
+
+### Notas de seguridad
+- `.env.production` y `s3.json` con el secret real **fuera del repo** (ya en `.gitignore`).
+- Mongo corre con `--auth`; `MONGODB_URI` incluye usuario/clave y `authSource=admin`.
+- SeaweedFS sirve lectura pública/anónima de los assets (equivalente a servir `/uploads`);
+  no guardes datos sensibles en el bucket público.
+- Cambiá la clave del admin tras el primer acceso.
+
 ## Checklist de pre-despliegue
 
 - [ ] `JWT_*` y `STORAGE_SIGNING_SECRET` son secretos fuertes y únicos por entorno.
