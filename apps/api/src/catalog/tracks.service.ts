@@ -121,7 +121,10 @@ export class TracksService {
     const stored = await this.storage.saveBuffer(file.buffer, 'audio', `${track._id}${ext}`);
     const metadata = await this.audio.extractMetadata(file.buffer);
 
-    track.src = stored.publicPath;
+    // Guardar la URL navegable (S3 público o /uploads local), igual que las
+    // imágenes. El player del front usa track.src directo, así que debe ser una
+    // URL servible — no el path interno, que con driver s3 apunta a /uploads.
+    track.src = this.storage.publicUrl(stored.publicPath);
     track.srcType = 'audio';
     if (metadata.duration > 0) track.duration = metadata.duration;
     await track.save();
