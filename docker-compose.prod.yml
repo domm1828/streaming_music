@@ -1,0 +1,69 @@
+# Despliegue de producción: edge (Caddy) + API + SeaweedFS.
+# MongoDB NO corre en un contenedor: se usa el que ya está instalado en el host
+# del VPS (la API lo alcanza por host.docker.internal). No incluye redis (no se
+# usa) ni meilisearch (opcional; con driver 'auto' la búsqueda cae al índice de
+# texto de Mongo).
+#
+# Uso:
+#   cp .env.production.example .env.production   # y completá los valores
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+name: stream-music-prod
+
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: stream-music-edge
+    container_name: stream-music-caddy
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      DOMAIN: ${DOMAIN:?Definí DOMAIN en .env.production}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy-data:/data # certificados Let's Encrypt (persistentes)
+      - caddy-config:/config
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: stream-music-api
+    container_name: stream-music-api
+    restart: unless-stopped
+    depends_on:
+      - seaweedfs
+    env_file:
+      - .env.production
+    environment:
+      PORT: '3000'
+      STORAGE_DIR: /app/storage
+    # Mapea host.docker.internal → IP del host, para alcanzar el MongoDB que
+    # corre en el VPS (fuera de Docker). En Linux requiere este mapeo explícito.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - api-storage:/app/storage # temporales de TUS y, si se usa driver local, /uploads
+    expose:
+      - '3000'
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.80
+    container_name: stream-music-seaweedfs
+    restart: unless-stopped
+    command: 'server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data'
+    volumes:
+      - seaweedfs-data:/data
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    expose:
+      - '8333'
+
+volumes:
+  caddy-data:
+  caddy-config:
+  api-storage:
+  seaweedfs-data:

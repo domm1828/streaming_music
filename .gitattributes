@@ -1,0 +1,21 @@
+# Normaliza saltos de línea. Texto = LF en el repo.
+* text=auto eol=lf
+
+# Infra que corre en Linux/containers: SIEMPRE LF (CRLF rompe el parseo).
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+Caddyfile       text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+.env.*          text eol=lf
+
+# Binarios: sin conversión.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.webp          binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary
