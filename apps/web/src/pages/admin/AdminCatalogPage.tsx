@@ -4,6 +4,7 @@ import { useDebounce } from '../../lib/use-debounce';
 import { Column, DataTable } from '../../features/admin/DataTable';
 import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
+import { AlbumCreateDialog } from '../../features/admin/AlbumCreateDialog';
 import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
 import { LyricsEditDialog } from '../../features/admin/LyricsEditDialog';
 import { ChannelEditorDialog } from '../../features/admin/ChannelEditorDialog';
@@ -202,6 +203,7 @@ function AlbumsTab() {
   const upload = useUploadImage();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const pick = (id: string, file: File) => {
     setBusyId(id);
@@ -218,6 +220,14 @@ function AlbumsTab() {
   ];
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <button
+          onClick={() => setCreating(true)}
+          className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light"
+        >
+          Nuevo álbum
+        </button>
+      </div>
       <DataTable
         columns={columns}
         rows={data?.data ?? []}
@@ -241,6 +251,7 @@ function AlbumsTab() {
         )}
       />
       {editId && <AlbumEditDialog albumId={editId} onClose={() => setEditId(null)} />}
+      {creating && <AlbumCreateDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }
