@@ -10,6 +10,7 @@
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "seed": "nest build && node dist/seed.js",
+    "seed:prod": "nest build && node dist/seed-admin.js",
     "test": "vitest run"
   },
   "dependencies": {

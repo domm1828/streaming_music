@@ -96,8 +96,27 @@ cualquier entorno expuesto.
 
 ## Datos iniciales
 
+En **producción** solo hace falta crear el usuario administrador inicial. El seeder de
+producción crea **únicamente** ese usuario (sin datos demo), con las credenciales que le
+pasás por variables de entorno — nunca van en el repo — y es idempotente:
+
 ```bash
-npm run seed --workspace @stream-music/api   # usuarios, catálogo y playlist demo (idempotente)
+ADMIN_EMAIL=admin@tudominio.com ADMIN_PASSWORD='una-clave-segura' \
+  npm run seed:prod --workspace @stream-music/api
+```
+
+- `ADMIN_EMAIL` y `ADMIN_PASSWORD` (≥ 8 caracteres) son **obligatorios**; si faltan, el
+  seeder aborta con error y código ≠ 0.
+- Opcionales: `ADMIN_USERNAME` (default `admin`), `ADMIN_NAME` (default `Administrador`).
+- Si el usuario ya existe, no se duplica: se garantiza que tenga el rol `admin` y se
+  respeta su clave actual, salvo que pases `ADMIN_RESET_PASSWORD=true` para actualizarla.
+
+El usuario queda con rol `admin` y email verificado. Cambiá la clave tras el primer acceso.
+
+Para un entorno de **desarrollo/demo** (usuarios, catálogo y playlist de ejemplo):
+
+```bash
+npm run seed --workspace @stream-music/api   # datos demo (idempotente) — NO usar en producción
 ```
 
 Los roles por defecto (`admin`, `user`), settings, localización y páginas del CMS se
