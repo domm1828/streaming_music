@@ -1,6 +1,8 @@
-# Despliegue de producción: edge (Caddy) + API + Mongo + SeaweedFS.
-# No incluye redis (no se usa) ni meilisearch (opcional; con driver 'auto' la
-# búsqueda cae al índice de texto de Mongo).
+# Despliegue de producción: edge (Caddy) + API + SeaweedFS.
+# MongoDB NO corre en un contenedor: se usa el que ya está instalado en el host
+# del VPS (la API lo alcanza por host.docker.internal). No incluye redis (no se
+# usa) ni meilisearch (opcional; con driver 'auto' la búsqueda cae al índice de
+# texto de Mongo).
 #
 # Uso:
 #   cp .env.production.example .env.production   # y completá los valores
@@ -34,28 +36,20 @@ services:
     container_name: stream-music-api
     restart: unless-stopped
     depends_on:
-      - mongo
       - seaweedfs
     env_file:
       - .env.production
     environment:
       PORT: '3000'
       STORAGE_DIR: /app/storage
+    # Mapea host.docker.internal → IP del host, para alcanzar el MongoDB que
+    # corre en el VPS (fuera de Docker). En Linux requiere este mapeo explícito.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     volumes:
       - api-storage:/app/storage # temporales de TUS y, si se usa driver local, /uploads
     expose:
       - '3000'
-
-  mongo:
-    image: mongo:7
-    container_name: stream-music-mongo
-    restart: unless-stopped
-    command: ['--auth']
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?Definí MONGO_ROOT_USER en .env.production}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Definí MONGO_ROOT_PASSWORD en .env.production}
-    volumes:
-      - mongo-data:/data/db
 
   seaweedfs:
     image: chrislusf/seaweedfs:3.80
@@ -72,5 +66,4 @@ volumes:
   caddy-data:
   caddy-config:
   api-storage:
-  mongo-data:
   seaweedfs-data:

@@ -113,11 +113,13 @@ CORS entre ellos. Servicios del stack de producción (`docker-compose.prod.yml`)
 |---|---|---|---|
 | `caddy` | `apps/web/Dockerfile` (SPA + Caddy) | 80, 443 | TLS, sirve el SPA y hace de reverse proxy |
 | `api` | `apps/api/Dockerfile` (Node 26) | interno 3000 | API NestJS |
-| `mongo` | `mongo:7` (con `--auth`) | interno | Base de datos |
 | `seaweedfs` | `chrislusf/seaweedfs` | interno 8333 | Object store S3 de los medios |
 
-No se incluyen `redis` (no se usa) ni `meilisearch` (opcional; con `SEARCH_DRIVER=auto`
-la búsqueda cae al índice de texto de Mongo).
+**MongoDB corre en el host del VPS** (instalado fuera de Docker), no en el compose. El
+contenedor de la API lo alcanza por `host.docker.internal`, que `docker-compose.prod.yml`
+mapea a la IP del host con `extra_hosts: host-gateway`. No se incluyen `redis` (no se usa)
+ni `meilisearch` (opcional; con `SEARCH_DRIVER=auto` la búsqueda cae al índice de texto de
+Mongo).
 
 **Ruteo del edge** (`docker/Caddyfile`): `/api/*` y `/socket.io/*` → `api:3000`;
 `/s3/*` → `seaweedfs:8333` (assets públicos); todo lo demás → SPA con fallback a
@@ -127,12 +129,18 @@ la búsqueda cae al índice de texto de Mongo).
 - Un VPS con Docker + Docker Compose v2 y los puertos **80 y 443** abiertos.
 - Un registro **DNS A** de `stream.duglasm.com` apuntando a la IP del VPS (Caddy valida
   el certificado por HTTP-01, así que el dominio ya debe resolver antes del primer arranque).
+- **MongoDB ya instalado y corriendo en el host** del VPS, accesible desde los contenedores:
+  - En `/etc/mongod.conf`, `net.bindIp` debe incluir la IP del gateway de Docker
+    (p.ej. `127.0.0.1,172.17.0.1`) o `0.0.0.0` (en ese caso, cerrá el puerto 27017 en el
+    firewall a todo lo externo). Reiniciá `mongod` tras el cambio.
+  - Creá la base `stream_music` y un usuario con auth (no uses el root); poné esas
+    credenciales en `MONGODB_URI`.
 
 ### Pasos
 ```bash
 # 1) Config de producción (NO se commitea; contiene secretos)
 cp .env.production.example .env.production
-#    editá: DOMAIN, CORS_ORIGIN, APP_URL, MONGO_ROOT_*, MONGODB_URI,
+#    editá: DOMAIN, CORS_ORIGIN, APP_URL, MONGODB_URI (apunta a host.docker.internal),
 #    JWT_* , STORAGE_SIGNING_SECRET, S3_* y ADMIN_*  (usá  openssl rand -base64 48)
 
 # 2) Cambiá el secret por defecto de SeaweedFS en docker/seaweedfs/s3.json
@@ -154,7 +162,8 @@ El primer arranque de Caddy tarda unos segundos en emitir el certificado. Logs:
 
 ### Notas de seguridad
 - `.env.production` y `s3.json` con el secret real **fuera del repo** (ya en `.gitignore`).
-- Mongo corre con `--auth`; `MONGODB_URI` incluye usuario/clave y `authSource=admin`.
+- El MongoDB del host corre con auth; `MONGODB_URI` incluye usuario/clave y `authSource`.
+  Si exponés `mongod` en `0.0.0.0`, bloqueá el puerto 27017 en el firewall salvo para el host.
 - SeaweedFS sirve lectura pública/anónima de los assets (equivalente a servir `/uploads`);
   no guardes datos sensibles en el bucket público.
 - Cambiá la clave del admin tras el primer acceso.
