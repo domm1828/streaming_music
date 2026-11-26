@@ -4,7 +4,10 @@ import { User } from '../users/schemas/user.schema';
 
 export type FileEntryDocument = HydratedDocument<FileEntry>;
 
-/** Registro de un archivo subido (para el administrador de archivos). */
+export const MEDIA_KINDS = ['image', 'audio', 'video', 'other'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+/** Registro de un archivo subido (para el administrador de archivos / biblioteca de medios). */
 @Schema({ timestamps: true, collection: 'file_entries' })
 export class FileEntry {
   /** URL pública (para usar en <img>). */
@@ -23,6 +26,14 @@ export class FileEntry {
 
   @Prop({ type: Number, default: 0 })
   size!: number;
+
+  /** Hash SHA-256 del contenido (para deduplicar subidas idénticas). */
+  @Prop({ type: String, default: null, index: true })
+  sha256!: string | null;
+
+  /** Categoría derivada del mime: image | audio | video | other. */
+  @Prop({ type: String, enum: MEDIA_KINDS, default: 'other', index: true })
+  kind!: MediaKind;
 
   @Prop({ type: Types.ObjectId, ref: User.name, default: null })
   user!: Types.ObjectId | null;
