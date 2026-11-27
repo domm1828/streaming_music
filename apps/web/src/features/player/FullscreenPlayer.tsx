@@ -38,14 +38,14 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const isYoutube = track?.srcType === 'youtube';
+  const hasVideo = track?.srcType === 'youtube' || track?.srcType === 'video';
   const videoSlotRef = useRef<HTMLDivElement | null>(null);
 
-  // Mientras el overlay está abierto en una pista de YouTube, se ubica el video
-  // (iframe único del player) sobre este slot, midiéndolo y guardándolo en el store.
+  // Mientras el overlay está abierto en una pista con video (YouTube o archivo),
+  // se ubica el video (único del player) sobre este slot, midiéndolo y guardándolo.
   useEffect(() => {
     const setVideoBox = usePlayerStore.getState().setVideoBox;
-    if (!open || !isYoutube) {
+    if (!open || !hasVideo) {
       setVideoBox(null);
       return;
     }
@@ -62,7 +62,7 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
       window.removeEventListener('resize', measure);
       setVideoBox(null);
     };
-  }, [open, isYoutube, track?._id]);
+  }, [open, hasVideo, track?._id]);
 
   if (!open || !track) return null;
   const artwork = track.image ?? track.album?.image ?? null;
@@ -84,10 +84,10 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
           <div
             ref={videoSlotRef}
             className={`w-full overflow-hidden rounded-2xl bg-chip shadow-2xl ${
-              isYoutube ? 'aspect-video max-w-2xl' : 'aspect-square max-w-sm'
+              hasVideo ? 'aspect-video max-w-2xl' : 'aspect-square max-w-sm'
             }`}
           >
-            {isYoutube ? null : artwork ? (
+            {hasVideo ? null : artwork ? (
               <img src={artwork} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-gradient-to-br from-brand-primary to-brand-accent" />

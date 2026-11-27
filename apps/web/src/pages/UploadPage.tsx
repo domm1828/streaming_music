@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Disc3, Music, Trash2, Upload, X } from 'lucide-react';
+import { Disc3, Music, Trash2, Upload, Video, X } from 'lucide-react';
 import { useGenres } from '../features/catalog/catalog-queries';
 import { ArtistPicker } from '../features/catalog/ArtistPicker';
 import { MultiArtistPicker, type ArtistRef } from '../features/catalog/MultiArtistPicker';
@@ -11,6 +11,7 @@ import {
   useDeleteMyTrack,
   useMyTracks,
   useUploadTrackAudio,
+  useUploadTrackVideo,
 } from '../features/creator/creator-queries';
 import { MediaPickerDialog } from '../features/media/MediaPickerDialog';
 import type { Genre } from '../features/catalog/types';
@@ -49,6 +50,7 @@ function CoverInput({ image, onChange, label = 'Carátula' }: { image: string | 
 }
 
 function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; onRemove: () => void }) {
+  const isVideo = file.type.startsWith('video/');
   const [name, setName] = useState(file.name.replace(/\.[^.]+$/, ''));
   const [artists, setArtists] = useState<ArtistRef[]>([]);
   const [album, setAlbum] = useState<AlbumRef | null>(null);
@@ -60,6 +62,7 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
 
   const createTrack = useCreateTrack();
   const uploadAudio = useUploadTrackAudio();
+  const uploadVideo = useUploadTrackVideo();
 
   const save = async () => {
     setStatus('saving');
@@ -72,7 +75,7 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
         genres: genreIds.length ? genreIds : undefined,
         image: image ?? undefined,
       });
-      await uploadAudio.mutateAsync({ id: track._id, file });
+      await (isVideo ? uploadVideo : uploadAudio).mutateAsync({ id: track._id, file });
       setTrackId(track._id);
       setStatus('done');
     } catch (e) {
@@ -87,8 +90,9 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
         <CoverInput image={image} onChange={setImage} />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <Music size={16} className="shrink-0 text-muted" />
+            {isVideo ? <Video size={16} className="shrink-0 text-muted" /> : <Music size={16} className="shrink-0 text-muted" />}
             <span className="truncate text-xs text-muted">{file.name}</span>
+            {isVideo && <span className="rounded-full bg-brand-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-primary">Video</span>}
             <button onClick={onRemove} className="ml-auto text-muted hover:text-red-500"><X size={16} /></button>
           </div>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de la pista" className={field} />
@@ -125,6 +129,7 @@ function AlbumForm({ files, genres, onClear }: { files: File[]; genres: Genre[];
   const createAlbum = useCreateAlbum();
   const createTrack = useCreateTrack();
   const uploadAudio = useUploadTrackAudio();
+  const uploadVideo = useUploadTrackVideo();
 
   const create = async () => {
     if (!name.trim()) return setError('Poné un nombre al álbum.');
@@ -148,7 +153,7 @@ function AlbumForm({ files, genres, onClear }: { files: File[]; genres: Genre[];
           genres: genreIds.length ? genreIds : undefined,
           image: image ?? undefined,
         });
-        await uploadAudio.mutateAsync({ id: track._id, file });
+        await (file.type.startsWith('video/') ? uploadVideo : uploadAudio).mutateAsync({ id: track._id, file });
         setProgress(++n);
       }
       setAlbumId(album._id);
@@ -244,8 +249,8 @@ export function UploadPage() {
 
   const addFiles = (files: FileList | null) => {
     if (!files) return;
-    const audio = Array.from(files).filter((f) => f.type.startsWith('audio/'));
-    setItems((s) => [...s, ...audio.map((file) => ({ key: `${file.name}-${Date.now()}-${Math.random()}`, file }))]);
+    const media = Array.from(files).filter((f) => f.type.startsWith('audio/') || f.type.startsWith('video/'));
+    setItems((s) => [...s, ...media.map((file) => ({ key: `${file.name}-${Date.now()}-${Math.random()}`, file }))]);
   };
 
   return (
@@ -268,9 +273,9 @@ export function UploadPage() {
         className={`flex flex-col items-center gap-3 rounded-panel border-2 border-dashed p-10 text-center transition ${dragging ? 'border-brand-secondary bg-brand-primary/5' : 'border-divider'}`}
       >
         <Upload size={32} className="text-muted" />
-        <p className="text-sm text-muted">Arrastrá archivos de audio acá, o</p>
+        <p className="text-sm text-muted">Arrastrá archivos de audio o video acá, o</p>
         <button onClick={() => inputRef.current?.click()} className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light">Elegir archivos</button>
-        <input ref={inputRef} type="file" accept="audio/*" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
+        <input ref={inputRef} type="file" accept="audio/*,video/*" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
       </div>
 
       {items.length > 0 && (

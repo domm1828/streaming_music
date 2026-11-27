@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type SrcType = 'audio' | 'youtube' | 'hls' | 'external';
+export type SrcType = 'audio' | 'video' | 'youtube' | 'hls' | 'external';
 
 export interface PlayerTrack {
   _id: string;

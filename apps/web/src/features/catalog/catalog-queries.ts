@@ -66,3 +66,12 @@ export function useAlbum(id: string) {
 export function useTrack(id: string) {
   return useQuery({ queryKey: ['track', id], queryFn: () => getOne<Track>(`tracks/${id}`) });
 }
+
+/** Pistas de tipo video (para la sección /videos). */
+export function useVideoTracks(page: number, search?: string) {
+  return useQuery({
+    queryKey: ['video-tracks', page, search ?? ''],
+    queryFn: () =>
+      getList<Track>('tracks', { type: 'video', page, perPage: 24, ...(search ? { search } : {}) }),
+  });
+}

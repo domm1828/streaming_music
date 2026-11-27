@@ -30,6 +30,18 @@ export function useUploadTrackAudio() {
   });
 }
 
+/** Sube el archivo de video a una pista ya creada (genera portada/duración en el backend). */
+export function useUploadTrackVideo() {
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await apiClient.post<ApiResponse<Track>>(`tracks/${id}/video`, form);
+      return data.data;
+    },
+  });
+}
+
 export function useMyTracks(page: number) {
   return useQuery<Paginated<Track>>({
     queryKey: ['my-tracks', page],
