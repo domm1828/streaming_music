@@ -7,7 +7,7 @@ import { Tag } from './tag.schema';
 import { User } from '../../users/schemas/user.schema';
 
 export type TrackDocument = HydratedDocument<Track>;
-export type TrackSrcType = 'audio' | 'youtube' | 'hls' | 'external';
+export type TrackSrcType = 'audio' | 'video' | 'youtube' | 'hls' | 'external';
 
 @Schema({ _id: false })
 export class TrackArtistRef {
@@ -38,7 +38,7 @@ export class Track {
   @Prop({ type: String, default: null })
   src!: string | null;
 
-  @Prop({ type: String, required: true, enum: ['audio', 'youtube', 'hls', 'external'], default: 'audio' })
+  @Prop({ type: String, required: true, enum: ['audio', 'video', 'youtube', 'hls', 'external'], default: 'audio' })
   srcType!: TrackSrcType;
 
   @Prop({ type: String, default: null })

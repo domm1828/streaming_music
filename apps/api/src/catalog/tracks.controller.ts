@@ -37,7 +37,7 @@ export class TracksController {
 
   @Get()
   list(@Query() query: CatalogListDto) {
-    return this.service.list(query.page, query.perPage, query.search);
+    return this.service.list(query.page, query.perPage, query.search, query.type);
   }
 
   @Get('mine')
@@ -90,6 +90,25 @@ export class TracksController {
       throw new BadRequestException(`El archivo supera los ${maxMb} MB`);
     }
     return this.service.uploadAudio(id, file, user);
+  }
+
+  @Post(':id/video')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVideo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!file) throw new BadRequestException('Falta el archivo de video (campo "file")');
+    if (!file.mimetype.startsWith('video/')) {
+      throw new BadRequestException('El archivo debe ser de video');
+    }
+    const maxMb = await this.settings.getNumber('uploads.maxVideoMb', 200);
+    if (file.size > maxMb * 1024 * 1024) {
+      throw new BadRequestException(`El archivo supera los ${maxMb} MB`);
+    }
+    return this.service.uploadVideo(id, file, user);
   }
 
   @Patch('bulk')
