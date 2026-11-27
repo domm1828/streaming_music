@@ -93,7 +93,14 @@ export function TrackEditDialog({ trackId, onClose }: { trackId: string; onClose
           <p className="text-muted">Cargando…</p>
         ) : (
           <>
-            <MediaField value={image} onChange={setImage} label="Portada" />
+            <MediaField
+              value={image}
+              onChange={setImage}
+              label="Portada"
+              promptSeed={`Portada para la pista musical «${name || data.name}»${
+                artists.length ? ` de ${artists.map((a) => a.name).join(', ')}` : ''
+              }, arte de tapa, sin texto`}
+            />
 
             <div className="flex gap-3">
               <div className="flex-1">

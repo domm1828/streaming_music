@@ -11,10 +11,12 @@ interface Props {
   shape?: 'circle' | 'rounded';
   kind?: MediaKind;
   scope?: MediaScope;
+  /** Prompt inicial para la pestaña "Generar con IA" (ej. el nombre de la entidad). */
+  promptSeed?: string;
 }
 
-/** Campo de medio reutilizable: muestra el preview y abre el selector (subir / biblioteca). */
-export function MediaField({ value, onChange, label = 'Imagen', shape = 'rounded', kind = 'image', scope = 'all' }: Props) {
+/** Campo de medio reutilizable: muestra el preview y abre el selector (subir / biblioteca / generar). */
+export function MediaField({ value, onChange, label = 'Imagen', shape = 'rounded', kind = 'image', scope = 'all', promptSeed }: Props) {
   const [open, setOpen] = useState(false);
   const radius = shape === 'circle' ? 'rounded-full' : 'rounded';
 
@@ -50,6 +52,7 @@ export function MediaField({ value, onChange, label = 'Imagen', shape = 'rounded
           kind={kind}
           scope={scope}
           title={`Seleccionar ${label.toLowerCase()}`}
+          promptSeed={promptSeed}
           onSelect={({ url }) => onChange(url)}
           onClose={() => setOpen(false)}
         />
