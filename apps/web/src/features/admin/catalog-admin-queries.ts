@@ -247,6 +247,22 @@ export function useUpdateTrack() {
     },
   });
 }
+export interface BulkUpdateTracksInput {
+  trackIds: string[];
+  album?: string;
+  artists?: string[];
+  genres?: string[];
+  tags?: string[];
+  image?: string;
+}
+export function useBulkUpdateTracks() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: BulkUpdateTracksInput) =>
+      mutate<{ updated: number; skipped: number }>('patch', 'tracks/bulk', input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-tracks'] }),
+  });
+}
 export function useReplaceTrackAudio(id: string) {
   const qc = useQueryClient();
   return useMutation({
