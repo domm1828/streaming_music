@@ -14,7 +14,9 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { CATALOG_CHANGED, CatalogChangedEvent } from '../common/events';
 import { StorageService } from '../storage/storage.service';
 import { AudioService } from './audio.service';
+import { VideoService } from './video.service';
 import { BulkUpdateTracksDto, CreateTrackDto, UpdateTrackDto } from './dto/catalog.dto';
+import type { TrackSrcType } from './schemas/track.schema';
 import { Lyric, LyricDocument } from './schemas/lyric.schema';
 import { Track, TrackDocument } from './schemas/track.schema';
 
@@ -36,6 +38,7 @@ export class TracksService {
     @InjectModel(Lyric.name) private readonly lyricModel: Model<LyricDocument>,
     private readonly storage: StorageService,
     private readonly audio: AudioService,
+    private readonly video: VideoService,
     private readonly events: EventEmitter2,
   ) {}
 
@@ -84,8 +87,10 @@ export class TracksService {
     return { data, pagination: buildPaginationMeta(total, page, perPage) };
   }
 
-  async list(page: number, perPage: number, search?: string) {
-    const filter = search ? { name: { $regex: search, $options: 'i' } } : {};
+  async list(page: number, perPage: number, search?: string, type?: TrackSrcType) {
+    const filter: Record<string, unknown> = {};
+    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (type) filter.srcType = type;
     const [data, total] = await Promise.all([
       this.model.find(filter).sort({ plays: -1 }).skip((page - 1) * perPage).limit(perPage).populate('artists.artist').populate('album').lean().exec(),
       this.model.countDocuments(filter).exec(),
@@ -134,6 +139,33 @@ export class TracksService {
     return track;
   }
 
+  /**
+   * Sube un archivo de video como fuente de la pista. Extrae la duración y, si la
+   * pista no tiene portada, genera una a partir de un frame (ffmpeg). El procesamiento
+   * es tolerante a fallos: si ffmpeg no está disponible, la pista queda igual reproducible.
+   */
+  async uploadVideo(id: string, file: Express.Multer.File, user: AuthenticatedUser): Promise<TrackDocument> {
+    const track = await this.getOrFail(id);
+    this.assertCanManage(track, user);
+
+    const ext = extname(file.originalname) || '.mp4';
+    const stored = await this.storage.saveBuffer(file.buffer, 'video', `${track._id}${ext}`);
+    track.src = this.storage.publicUrl(stored.publicPath);
+    track.srcType = 'video';
+
+    const { duration, poster } = await this.video.extract(file.buffer, ext);
+    if (duration > 0) track.duration = duration;
+    // Solo generamos portada si la pista todavía no tiene una (no pisamos una elegida a mano).
+    if (!track.image && poster) {
+      const posterFile = await this.storage.saveBuffer(poster, 'video-posters', `${track._id}.jpg`);
+      track.image = this.storage.publicUrl(posterFile.publicPath);
+    }
+
+    await track.save();
+    this.emit(track._id, 'upsert');
+    return track;
+  }
+
   private async generateWaveform(trackId: string, buffer: Buffer): Promise<void> {
     try {
       const peaks = this.audio.generateWaveformPeaks(buffer);
@@ -152,8 +184,10 @@ export class TracksService {
   /** Resuelve la fuente reproducible según el tipo de la pista. */
   async resolvePlayback(id: string): Promise<PlaybackSource> {
     const track = await this.getOrFail(id);
-    // Para audio/HLS alojado localmente, entregar una URL firmada temporal.
-    const isLocal = (track.srcType === 'audio' || track.srcType === 'hls') && track.src?.startsWith('/uploads/');
+    // Para audio/video/HLS alojado localmente, entregar una URL firmada temporal.
+    const isLocal =
+      (track.srcType === 'audio' || track.srcType === 'video' || track.srcType === 'hls') &&
+      track.src?.startsWith('/uploads/');
     const signedSrc = isLocal && track.src ? await this.storage.signedUrl(track.src, 3600) : null;
     return {
       trackId: String(track._id),
@@ -218,7 +252,7 @@ export class TracksService {
   async remove(id: string, user: AuthenticatedUser): Promise<void> {
     const track = await this.getOrFail(id);
     this.assertCanManage(track, user);
-    if (track.srcType === 'audio' && track.src) await this.storage.delete(track.src);
+    if ((track.srcType === 'audio' || track.srcType === 'video') && track.src) await this.storage.delete(track.src);
     if (track.waveformPath) await this.storage.delete(track.waveformPath);
     await this.lyricModel.deleteOne({ track: track._id }).exec();
     await track.deleteOne();

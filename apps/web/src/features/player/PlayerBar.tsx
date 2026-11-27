@@ -105,7 +105,7 @@ export function PlayerBar({
 
         {/* Derecha: cola + descarga + volumen */}
         <div className="flex flex-1 items-center justify-end gap-1">
-          {player?.enableDownload !== false && track.srcType === 'audio' && track.src && (
+          {player?.enableDownload !== false && (track.srcType === 'audio' || track.srcType === 'video') && track.src && (
             <a
               href={track.src}
               download={track.name}

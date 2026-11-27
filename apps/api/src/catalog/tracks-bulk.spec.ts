@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TracksService } from './tracks.service';
 import { AudioService } from './audio.service';
+import { VideoService } from './video.service';
 import { StorageService } from '../storage/storage.service';
 import { Track, TrackSchema } from './schemas/track.schema';
 import { Lyric, LyricSchema } from './schemas/lyric.schema';
@@ -40,6 +41,7 @@ describe('TracksService.bulkUpdate (e2e, in-memory)', () => {
         TracksService,
         { provide: StorageService, useValue: {} },
         { provide: AudioService, useValue: {} },
+        { provide: VideoService, useValue: {} },
         { provide: EventEmitter2, useValue: { emit: () => true } },
       ],
     }).compile();

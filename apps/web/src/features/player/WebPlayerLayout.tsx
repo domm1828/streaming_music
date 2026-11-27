@@ -7,6 +7,7 @@ import { PlayerEngine } from './PlayerEngine';
 import { QueuePanel } from './QueuePanel';
 import { LyricsPanel } from './LyricsPanel';
 import { FullscreenPlayer } from './FullscreenPlayer';
+import { MiniVideoDock } from './MiniVideoDock';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -44,6 +45,7 @@ export function WebPlayerLayout() {
         />
       </div>
       <FullscreenPlayer open={fullOpen} onClose={() => setFullOpen(false)} />
+      <MiniVideoDock fullOpen={fullOpen} onExpand={() => setFullOpen(true)} />
       <PlayerEngine />
     </div>
   );

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { WebPlayerLayout } from './features/player/WebPlayerLayout';
 import { HomePage } from './pages/HomePage';
 import { BrowsePage } from './pages/BrowsePage';
+import { VideosPage } from './pages/VideosPage';
 import { ArtistPage } from './pages/ArtistPage';
 import { AlbumPage } from './pages/AlbumPage';
 import { TrackPage } from './pages/TrackPage';
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/browse', element: <BrowsePage /> },
+      { path: '/videos', element: <VideosPage /> },
       { path: '/search', element: <SearchPage /> },
       { path: '/radio', element: <RadioPage /> },
       { path: '/artist/:id', element: <ArtistPage /> },

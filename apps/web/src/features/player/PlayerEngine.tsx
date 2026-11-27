@@ -4,6 +4,7 @@ import { getOfflineBlob } from '../offline/offline-db';
 import { currentTrack, usePlayerStore } from './player-store';
 import { logPlay } from './use-log-play';
 import { YouTubeProvider } from './YouTubeProvider';
+import { NativeVideoProvider } from './NativeVideoProvider';
 
 /**
  * Motor de reproducción. Usa un <audio> para fuentes 'audio' y 'hls'
@@ -22,11 +23,14 @@ export function PlayerEngine() {
   const objectUrlRef = useRef<string | null>(null);
 
   const isYoutube = track?.srcType === 'youtube';
+  const isNativeVideo = track?.srcType === 'video';
+  // Pistas que no usan el elemento <audio> (tienen su propio motor de video).
+  const external = isYoutube || isNativeVideo;
 
   // Carga la fuente cuando cambia la pista (audio / hls).
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !track || isYoutube || !track.src) return;
+    if (!audio || !track || external || !track.src) return;
     if (loadedIdRef.current === track._id) return;
     loadedIdRef.current = track._id;
 
@@ -73,7 +77,7 @@ export function PlayerEngine() {
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
-  }, [track, isYoutube]);
+  }, [track, external]);
 
   // Revocar el object URL offline al desmontar.
   useEffect(() => {
@@ -85,10 +89,10 @@ export function PlayerEngine() {
   // Play / pause.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || isYoutube) return;
+    if (!audio || external) return;
     if (isPlaying) void audio.play().catch(() => undefined);
     else audio.pause();
-  }, [isPlaying, isYoutube]);
+  }, [isPlaying, external]);
 
   // Volumen.
   useEffect(() => {
@@ -98,10 +102,10 @@ export function PlayerEngine() {
   // Seek solicitado desde el store.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || isYoutube || pendingSeek === null) return;
+    if (!audio || external || pendingSeek === null) return;
     audio.currentTime = pendingSeek;
     usePlayerStore.getState().consumeSeek();
-  }, [pendingSeek, isYoutube]);
+  }, [pendingSeek, external]);
 
   // Media Session API: metadata + controles del sistema operativo.
   useEffect(() => {
@@ -189,6 +193,7 @@ export function PlayerEngine() {
         hidden
       />
       {isYoutube && track && <YouTubeProvider track={track} />}
+      {isNativeVideo && track && <NativeVideoProvider track={track} />}
     </>
   );
 }
