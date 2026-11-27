@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import { Disc3, Music, Trash2, Upload, X } from 'lucide-react';
 import { useGenres } from '../features/catalog/catalog-queries';
 import { ArtistPicker } from '../features/catalog/ArtistPicker';
+import { MultiArtistPicker, type ArtistRef } from '../features/catalog/MultiArtistPicker';
+import { AlbumPicker, type AlbumRef } from '../features/catalog/AlbumPicker';
 import {
   useCreateAlbum,
   useCreateTrack,
@@ -48,7 +50,8 @@ function CoverInput({ image, onChange, label = 'Carátula' }: { image: string | 
 
 function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; onRemove: () => void }) {
   const [name, setName] = useState(file.name.replace(/\.[^.]+$/, ''));
-  const [artist, setArtist] = useState<{ id: string; name: string } | null>(null);
+  const [artists, setArtists] = useState<ArtistRef[]>([]);
+  const [album, setAlbum] = useState<AlbumRef | null>(null);
   const [genreIds, setGenreIds] = useState<string[]>([]);
   const [image, setImage] = useState<string | null>(null);
   const [status, setStatus] = useState<'ready' | 'saving' | 'done' | 'error'>('ready');
@@ -64,7 +67,8 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
     try {
       const track = await createTrack.mutateAsync({
         name: name.trim() || file.name,
-        artists: artist ? [artist.id] : undefined,
+        artists: artists.length ? artists.map((a) => a.id) : undefined,
+        album: album?.id,
         genres: genreIds.length ? genreIds : undefined,
         image: image ?? undefined,
       });
@@ -88,7 +92,8 @@ function TrackCard({ file, genres, onRemove }: { file: File; genres: Genre[]; on
             <button onClick={onRemove} className="ml-auto text-muted hover:text-red-500"><X size={16} /></button>
           </div>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre de la pista" className={field} />
-          <ArtistPicker value={artist} onChange={setArtist} />
+          <MultiArtistPicker value={artists} onChange={setArtists} />
+          <AlbumPicker value={album} onChange={setAlbum} />
           <GenrePicker genres={genres} selected={genreIds} onToggle={(id) => setGenreIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))} />
           {status === 'done' && trackId ? (
             <p className="text-sm text-brand-secondary">✓ Subida. <Link to={`/track/${trackId}`} className="underline">Ver pista</Link></p>

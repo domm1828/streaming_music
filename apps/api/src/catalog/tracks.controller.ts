@@ -23,7 +23,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { PERMISSIONS } from '../auth/rbac/permissions';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { SettingsService } from '../settings/settings.service';
-import { CatalogListDto, CreateTrackDto, UpdateTrackDto, UpsertLyricDto } from './dto/catalog.dto';
+import { BulkUpdateTracksDto, CatalogListDto, CreateTrackDto, UpdateTrackDto, UpsertLyricDto } from './dto/catalog.dto';
 import { LyricsService } from './lyrics.service';
 import { TracksService } from './tracks.service';
 
@@ -90,6 +90,12 @@ export class TracksController {
       throw new BadRequestException(`El archivo supera los ${maxMb} MB`);
     }
     return this.service.uploadAudio(id, file, user);
+  }
+
+  @Patch('bulk')
+  @UseGuards(JwtAuthGuard)
+  bulkUpdate(@Body() dto: BulkUpdateTracksDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.service.bulkUpdate(dto, user);
   }
 
   @Patch(':id')

@@ -6,6 +6,7 @@ import { ArtistEditDialog } from '../../features/admin/ArtistEditDialog';
 import { AlbumEditDialog } from '../../features/admin/AlbumEditDialog';
 import { AlbumCreateDialog } from '../../features/admin/AlbumCreateDialog';
 import { TrackEditDialog } from '../../features/admin/TrackEditDialog';
+import { BulkTrackEditDialog } from '../../features/admin/BulkTrackEditDialog';
 import { LyricsEditDialog } from '../../features/admin/LyricsEditDialog';
 import { ChannelEditorDialog } from '../../features/admin/ChannelEditorDialog';
 import { MediaPickerDialog } from '../../features/media/MediaPickerDialog';
@@ -112,7 +113,7 @@ function EditableText({ value, onSave }: { value: string; onSave: (v: string) =>
   );
 }
 
-function ImageCell({ image, onSelect }: { image?: string | null; onSelect: (url: string) => void }) {
+function ImageCell({ image, onSelect, promptSeed }: { image?: string | null; onSelect: (url: string) => void; promptSeed?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-2">
@@ -133,6 +134,7 @@ function ImageCell({ image, onSelect }: { image?: string | null; onSelect: (url:
           kind="image"
           scope="all"
           title="Seleccionar imagen"
+          promptSeed={promptSeed}
           onSelect={({ url }) => onSelect(url)}
           onClose={() => setOpen(false)}
         />
@@ -153,7 +155,7 @@ function ArtistsTab() {
 
   type Row = Artist & { slug?: string; verified?: boolean };
   const columns: Column<Row>[] = [
-    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
+    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} promptSeed={`Foto de perfil del artista musical «${a.name}», retrato artístico, sin texto`} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'slug', header: 'Slug' },
     { key: 'verified', header: 'Verificado', render: (a) => (a.verified ? '✓' : '—') },
@@ -199,7 +201,7 @@ function AlbumsTab() {
   const [creating, setCreating] = useState(false);
 
   const columns: Column<Album>[] = [
-    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
+    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} promptSeed={`Portada del álbum musical «${a.name}», arte de tapa, sin texto`} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'artists', header: 'Artistas', render: (a) => a.artists?.map((ar) => ar.name).join(', ') },
   ];
@@ -250,6 +252,8 @@ function TracksTab() {
   const del = useDeleteTrack();
   const [lyricsFor, setLyricsFor] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const columns: Column<Track>[] = [
     { key: 'number', header: '#', className: 'w-10' },
@@ -259,11 +263,26 @@ function TracksTab() {
   ];
   return (
     <div className="space-y-3">
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-brand-secondary/40 bg-brand-primary/5 px-4 py-2 text-sm">
+          <span className="font-medium">{selected.size} seleccionada(s)</span>
+          <button
+            onClick={() => setBulkOpen(true)}
+            className="rounded-full bg-brand-primary px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-primary-light"
+          >
+            Editar en lote
+          </button>
+          <button onClick={() => setSelected(new Set())} className="text-xs text-muted hover:text-main">
+            Limpiar selección
+          </button>
+        </div>
+      )}
       <DataTable
         columns={columns}
         rows={data?.data ?? []}
         rowKey={(t) => t._id}
         loading={isLoading}
+        selection={{ selected, onChange: setSelected }}
         search={{ value: search, onChange: (v) => { setSearch(v); setPage(1); }, placeholder: 'Buscar pistas…' }}
         pagination={{ page, lastPage: data?.pagination.lastPage ?? 1, onPage: setPage }}
         actions={(t) => (
@@ -285,6 +304,13 @@ function TracksTab() {
         )}
       />
       {editId && <TrackEditDialog trackId={editId} onClose={() => setEditId(null)} />}
+      {bulkOpen && (
+        <BulkTrackEditDialog
+          trackIds={[...selected]}
+          onClose={() => setBulkOpen(false)}
+          onDone={() => { setBulkOpen(false); setSelected(new Set()); }}
+        />
+      )}
       {lyricsFor && (
         <LyricsEditDialog
           trackId={lyricsFor}
@@ -308,7 +334,7 @@ function GenresTab() {
   );
 
   const columns: Column<GenreStats>[] = [
-    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} onSelect={(url) => update.mutate({ id: g._id, image: url })} /> },
+    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} onSelect={(url) => update.mutate({ id: g._id, image: url })} promptSeed={`Imagen para el género musical «${g.displayName}», arte digital llamativo, sin texto`} /> },
     { key: 'displayName', header: 'Nombre', render: (g) => <EditableText value={g.displayName} onSave={(displayName) => update.mutate({ id: g._id, displayName })} /> },
     { key: 'name', header: 'Slug', render: (g) => <span className="text-muted">{g.name}</span> },
     { key: 'artistsCount', header: 'Artistas', render: (g) => <span className="tabular-nums">{g.artistsCount}</span> },
