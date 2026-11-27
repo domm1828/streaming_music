@@ -14,7 +14,7 @@ import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { CATALOG_CHANGED, CatalogChangedEvent } from '../common/events';
 import { StorageService } from '../storage/storage.service';
 import { AudioService } from './audio.service';
-import { CreateTrackDto, UpdateTrackDto } from './dto/catalog.dto';
+import { BulkUpdateTracksDto, CreateTrackDto, UpdateTrackDto } from './dto/catalog.dto';
 import { Lyric, LyricDocument } from './schemas/lyric.schema';
 import { Track, TrackDocument } from './schemas/track.schema';
 
@@ -177,6 +177,42 @@ export class TracksService {
     await track.save();
     this.emit(track._id, 'upsert');
     return track;
+  }
+
+  /**
+   * Edición masiva: aplica a varias pistas solo los campos presentes en el dto
+   * (los ausentes no se tocan; los multivaluados reemplazan). Valida el permiso
+   * pista por pista: las que el usuario no puede gestionar se saltan.
+   */
+  async bulkUpdate(
+    dto: BulkUpdateTracksDto,
+    user: AuthenticatedUser,
+  ): Promise<{ updated: number; skipped: number }> {
+    const ids = [...new Set(dto.trackIds)].filter((id) => Types.ObjectId.isValid(id));
+    let updated = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      const track = await this.model.findById(id).exec();
+      if (!track) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        this.assertCanManage(track, user);
+      } catch {
+        skipped += 1;
+        continue;
+      }
+      if (dto.album !== undefined) track.album = new Types.ObjectId(dto.album);
+      if (dto.artists !== undefined) track.artists = this.artistRefs(dto.artists);
+      if (dto.genres !== undefined) track.genres = dto.genres.map((g) => new Types.ObjectId(g));
+      if (dto.tags !== undefined) track.tags = dto.tags.map((t) => new Types.ObjectId(t));
+      if (dto.image !== undefined) track.image = dto.image;
+      await track.save();
+      this.emit(track._id, 'upsert');
+      updated += 1;
+    }
+    return { updated, skipped };
   }
 
   async remove(id: string, user: AuthenticatedUser): Promise<void> {

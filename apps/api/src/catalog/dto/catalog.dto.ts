@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -237,6 +238,37 @@ export class UpdateTrackDto {
   @Min(1)
   @IsOptional()
   number?: number;
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  artists?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  genres?: string[];
+
+  @IsArray()
+  @IsMongoId({ each: true })
+  @IsOptional()
+  tags?: string[];
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+}
+
+export class BulkUpdateTracksDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsMongoId({ each: true })
+  trackIds!: string[];
+
+  /** Campos a aplicar; los ausentes no se tocan. Los multivaluados reemplazan. */
+  @IsMongoId()
+  @IsOptional()
+  album?: string;
 
   @IsArray()
   @IsMongoId({ each: true })
