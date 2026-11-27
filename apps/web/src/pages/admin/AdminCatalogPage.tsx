@@ -112,7 +112,7 @@ function EditableText({ value, onSave }: { value: string; onSave: (v: string) =>
   );
 }
 
-function ImageCell({ image, onSelect }: { image?: string | null; onSelect: (url: string) => void }) {
+function ImageCell({ image, onSelect, promptSeed }: { image?: string | null; onSelect: (url: string) => void; promptSeed?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-2">
@@ -133,6 +133,7 @@ function ImageCell({ image, onSelect }: { image?: string | null; onSelect: (url:
           kind="image"
           scope="all"
           title="Seleccionar imagen"
+          promptSeed={promptSeed}
           onSelect={({ url }) => onSelect(url)}
           onClose={() => setOpen(false)}
         />
@@ -153,7 +154,7 @@ function ArtistsTab() {
 
   type Row = Artist & { slug?: string; verified?: boolean };
   const columns: Column<Row>[] = [
-    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
+    { key: 'image', header: 'Imagen', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} promptSeed={`Foto de perfil del artista musical «${a.name}», retrato artístico, sin texto`} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'slug', header: 'Slug' },
     { key: 'verified', header: 'Verificado', render: (a) => (a.verified ? '✓' : '—') },
@@ -199,7 +200,7 @@ function AlbumsTab() {
   const [creating, setCreating] = useState(false);
 
   const columns: Column<Album>[] = [
-    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} /> },
+    { key: 'image', header: 'Portada', render: (a) => <ImageCell image={a.image} onSelect={(url) => update.mutate({ id: a._id, image: url })} promptSeed={`Portada del álbum musical «${a.name}», arte de tapa, sin texto`} /> },
     { key: 'name', header: 'Nombre', render: (a) => <EditableText value={a.name} onSave={(name) => update.mutate({ id: a._id, name })} /> },
     { key: 'artists', header: 'Artistas', render: (a) => a.artists?.map((ar) => ar.name).join(', ') },
   ];
@@ -308,7 +309,7 @@ function GenresTab() {
   );
 
   const columns: Column<GenreStats>[] = [
-    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} onSelect={(url) => update.mutate({ id: g._id, image: url })} /> },
+    { key: 'image', header: 'Imagen', render: (g) => <ImageCell image={g.image} onSelect={(url) => update.mutate({ id: g._id, image: url })} promptSeed={`Imagen para el género musical «${g.displayName}», arte digital llamativo, sin texto`} /> },
     { key: 'displayName', header: 'Nombre', render: (g) => <EditableText value={g.displayName} onSave={(displayName) => update.mutate({ id: g._id, displayName })} /> },
     { key: 'name', header: 'Slug', render: (g) => <span className="text-muted">{g.name}</span> },
     { key: 'artistsCount', header: 'Artistas', render: (g) => <span className="tabular-nums">{g.artistsCount}</span> },

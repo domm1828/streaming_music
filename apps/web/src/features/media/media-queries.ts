@@ -40,6 +40,26 @@ export function useUploadMedia() {
   });
 }
 
+export interface GenerateImageInput {
+  prompt: string;
+  width?: number;
+  height?: number;
+  model?: string;
+  seed?: number;
+}
+
+/** Genera una imagen con IA (Pollinations) en el backend; queda guardada en la biblioteca. */
+export function useGenerateImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: GenerateImageInput) => {
+      const { data } = await apiClient.post<ApiResponse<UploadResult>>('admin/uploads/generate', input);
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['media-library'] }),
+  });
+}
+
 /** Lista la biblioteca: scope 'all' (admin, admin/files) o 'mine' (medios propios). */
 export function useMediaLibrary(opts: { scope: MediaScope; kind?: MediaKind; q?: string; page: number; enabled?: boolean }) {
   const { scope, kind, q, page, enabled = true } = opts;

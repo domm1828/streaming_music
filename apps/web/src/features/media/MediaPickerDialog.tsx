@@ -1,7 +1,14 @@
 import { useState } from 'react';
-import { X, Upload, Search, Check } from 'lucide-react';
+import { X, Upload, Search, Check, Sparkles } from 'lucide-react';
 import { useDebounce } from '../../lib/use-debounce';
-import { useMediaLibrary, useUploadMedia, type MediaEntry, type MediaKind, type MediaScope } from './media-queries';
+import {
+  useGenerateImage,
+  useMediaLibrary,
+  useUploadMedia,
+  type MediaEntry,
+  type MediaKind,
+  type MediaScope,
+} from './media-queries';
 
 const ACCEPT: Record<MediaKind, string> = {
   image: 'image/*',
@@ -21,16 +28,19 @@ interface Props {
   kind?: MediaKind;
   scope?: MediaScope;
   title?: string;
+  /** Prompt inicial para la pestaña "Generar con IA" (ej. el nombre de la entidad). */
+  promptSeed?: string;
   onSelect: (entry: { url: string; id: string }) => void;
   onClose: () => void;
 }
 
-/** Modal para subir un medio nuevo o elegir uno existente de la biblioteca. */
-export function MediaPickerDialog({ kind = 'image', scope = 'all', title, onSelect, onClose }: Props) {
-  const [tab, setTab] = useState<'upload' | 'library'>('library');
+/** Modal para subir, elegir de la biblioteca o generar con IA un medio. */
+export function MediaPickerDialog({ kind = 'image', scope = 'all', title, promptSeed, onSelect, onClose }: Props) {
+  const [tab, setTab] = useState<'upload' | 'library' | 'generate'>('library');
   const [rawQ, setRawQ] = useState('');
   const [page, setPage] = useState(1);
   const q = useDebounce(rawQ.trim(), 300);
+  const canGenerate = kind === 'image';
 
   const upload = useUploadMedia();
   const library = useMediaLibrary({ scope, kind, q: q || undefined, page, enabled: tab === 'library' });
@@ -70,9 +80,19 @@ export function MediaPickerDialog({ kind = 'image', scope = 'all', title, onSele
           <button className={tabClass(tab === 'upload')} onClick={() => setTab('upload')}>
             <Upload size={15} /> Subir
           </button>
+          {canGenerate && (
+            <button className={tabClass(tab === 'generate')} onClick={() => setTab('generate')}>
+              <Sparkles size={15} /> Generar con IA
+            </button>
+          )}
         </div>
 
-        {tab === 'upload' ? (
+        {tab === 'generate' ? (
+          <GenerateTab
+            promptSeed={promptSeed}
+            onUse={(r) => { onSelect({ url: r.url, id: r.id }); onClose(); }}
+          />
+        ) : tab === 'upload' ? (
           <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-panel border-2 border-dashed border-divider bg-chip/40 p-8 text-center hover:border-brand-secondary">
             <Upload size={28} className="text-muted" />
             <span className="text-sm font-medium">{upload.isPending ? 'Subiendo…' : 'Elegí un archivo o arrastralo acá'}</span>
@@ -150,6 +170,109 @@ export function MediaPickerDialog({ kind = 'image', scope = 'all', title, onSele
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+const SIZES = [
+  { label: 'Cuadrada', w: 1024, h: 1024 },
+  { label: 'Panorámica', w: 1280, h: 720 },
+  { label: 'Retrato', w: 768, h: 1024 },
+] as const;
+
+/** Pestaña de generación con IA: prompt editable, tamaño y preview antes de usar. */
+function GenerateTab({
+  promptSeed,
+  onUse,
+}: {
+  promptSeed?: string;
+  onUse: (r: { url: string; id: string }) => void;
+}) {
+  const [prompt, setPrompt] = useState(promptSeed ?? '');
+  const [sizeIdx, setSizeIdx] = useState(0);
+  const [generated, setGenerated] = useState<{ url: string; id: string } | null>(null);
+  const gen = useGenerateImage();
+  const size = SIZES[sizeIdx];
+
+  const generate = () => {
+    const p = prompt.trim();
+    if (p.length < 3) return;
+    setGenerated(null);
+    gen.mutate(
+      { prompt: p, width: size.w, height: size.h },
+      { onSuccess: (r) => setGenerated({ url: r.url, id: r.id }) },
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted">Descripción (prompt)</label>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={3}
+          placeholder="Ej: portada de álbum de jazz, atardecer sobre la ciudad, estilo acuarela, sin texto"
+          className="w-full resize-none rounded-lg border border-divider bg-chip px-3 py-2 text-sm outline-none focus:border-brand-secondary"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted">Tamaño:</span>
+        {SIZES.map((s, i) => (
+          <button
+            key={s.label}
+            type="button"
+            onClick={() => setSizeIdx(i)}
+            className={`rounded-full px-3 py-1 text-xs transition ${
+              i === sizeIdx ? 'bg-brand-primary text-white' : 'border border-divider text-muted hover:border-brand-secondary'
+            }`}
+          >
+            {s.label} · {s.w}×{s.h}
+          </button>
+        ))}
+      </div>
+
+      {generated ? (
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-panel border border-divider">
+            <img src={generated.url} alt="Imagen generada" className="mx-auto max-h-[40vh] w-auto object-contain" />
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={generate}
+              disabled={gen.isPending}
+              className="rounded-full border border-divider px-4 py-2 text-sm text-muted hover:border-brand-secondary hover:text-main disabled:opacity-60"
+            >
+              {gen.isPending ? 'Generando…' : 'Regenerar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onUse(generated)}
+              className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light"
+            >
+              Usar esta imagen
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-panel border-2 border-dashed border-divider bg-chip/40 p-6 text-center">
+          <Sparkles size={26} className="text-muted" />
+          <p className="text-xs text-muted">
+            {gen.isPending ? 'Generando imagen… puede tardar unos segundos.' : 'Escribí una descripción y generá la imagen.'}
+          </p>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={gen.isPending || prompt.trim().length < 3}
+            className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-light disabled:opacity-60"
+          >
+            {gen.isPending ? 'Generando…' : 'Generar'}
+          </button>
+          {gen.isError && <span className="text-xs text-red-500">No se pudo generar. Probá de nuevo o cambiá el prompt.</span>}
+        </div>
+      )}
     </div>
   );
 }
