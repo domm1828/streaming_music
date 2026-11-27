@@ -110,3 +110,47 @@ body {
   width: 100% !important;
   height: 100% !important;
 }
+
+/*
+ * Seekbar con franja de buffer. Las variables --played y --buffered son
+ * porcentajes (0%–100%): la capa superior (acento) marca lo reproducido, y la
+ * inferior marca lo buffereado sobre la base. Funciona en WebKit y Firefox
+ * dejando las pistas nativas transparentes y pintando el fondo del elemento.
+ */
+.sm-seek {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background:
+    linear-gradient(to right, var(--color-brand-accent) 0 var(--played, 0%), transparent var(--played, 0%)),
+    linear-gradient(to right, var(--text-muted) 0 var(--buffered, 0%), var(--divider) var(--buffered, 0%));
+  cursor: pointer;
+}
+.sm-seek::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 4px;
+}
+.sm-seek::-moz-range-track {
+  background: transparent;
+  height: 4px;
+}
+.sm-seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--color-brand-accent);
+  border: none;
+  cursor: pointer;
+}
+.sm-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-brand-accent);
+  border: none;
+  cursor: pointer;
+}

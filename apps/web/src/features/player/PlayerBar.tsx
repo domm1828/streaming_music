@@ -1,4 +1,5 @@
-import { Download, ListMusic, Maximize2, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Download, ListMusic, Loader2, Maximize2, Mic2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { IconButton } from '../../components/IconButton';
 import { usePublicSettings } from '../auth/auth-queries';
@@ -29,6 +30,8 @@ export function PlayerBar({
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
+  const buffered = usePlayerStore((s) => s.buffered);
+  const buffering = usePlayerStore((s) => s.buffering);
   const repeat = usePlayerStore((s) => s.repeat);
   const shuffle = usePlayerStore((s) => s.shuffle);
   const volume = usePlayerStore((s) => s.volume);
@@ -38,6 +41,9 @@ export function PlayerBar({
   if (!track) return null;
   const artwork = track.image ?? track.album?.image ?? null;
   const total = duration || track.duration || 0;
+  const playedPct = total > 0 ? Math.min(100, (currentTime / total) * 100) : 0;
+  const bufferedPct = total > 0 ? Math.min(100, (buffered / total) * 100) : 0;
+  const seekStyle = { '--played': `${playedPct}%`, '--buffered': `${bufferedPct}%` } as CSSProperties;
 
   return (
     <footer className="rounded-panel bg-elevated px-3 py-2.5">
@@ -79,7 +85,13 @@ export function PlayerBar({
               <SkipBack size={18} />
             </IconButton>
             <IconButton variant="solid" size="md" onClick={togglePlay} aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
-              {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+              {buffering && isPlaying ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : isPlaying ? (
+                <Pause size={18} />
+              ) : (
+                <Play size={18} />
+              )}
             </IconButton>
             <IconButton size="sm" onClick={next} aria-label="Siguiente">
               <SkipForward size={18} />
@@ -96,7 +108,8 @@ export function PlayerBar({
               max={total}
               value={currentTime}
               onChange={(e) => seekTo(Number(e.target.value))}
-              className="h-1 flex-1 cursor-pointer accent-brand-accent"
+              className="sm-seek flex-1"
+              style={seekStyle}
               aria-label="Progreso"
             />
             <span className="w-9 text-[11px] tabular-nums text-muted">{fmt(total)}</span>

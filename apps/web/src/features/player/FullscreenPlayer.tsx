@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { ChevronDown, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from 'lucide-react';
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import { ChevronDown, Loader2, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward } from 'lucide-react';
 import { Link } from 'react-router';
 import { IconButton } from '../../components/IconButton';
 import { LikeButton } from '../social/LikeButton';
@@ -19,6 +19,8 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
+  const buffered = usePlayerStore((s) => s.buffered);
+  const buffering = usePlayerStore((s) => s.buffering);
   const repeat = usePlayerStore((s) => s.repeat);
   const shuffle = usePlayerStore((s) => s.shuffle);
   const { togglePlay, next, prev, seekTo, cycleRepeat, toggleShuffle } = usePlayerStore.getState();
@@ -67,6 +69,9 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
   if (!open || !track) return null;
   const artwork = track.image ?? track.album?.image ?? null;
   const total = duration || track.duration || 0;
+  const playedPct = total > 0 ? Math.min(100, (currentTime / total) * 100) : 0;
+  const bufferedPct = total > 0 ? Math.min(100, (buffered / total) * 100) : 0;
+  const seekStyle = { '--played': `${playedPct}%`, '--buffered': `${bufferedPct}%` } as CSSProperties;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-surface/95 backdrop-blur-xl">
@@ -118,7 +123,8 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
                 max={total}
                 value={currentTime}
                 onChange={(e) => seekTo(Number(e.target.value))}
-                className="h-1 flex-1 cursor-pointer accent-brand-accent"
+                className="sm-seek flex-1"
+                style={seekStyle}
                 aria-label="Progreso"
               />
               <span className="w-10 text-[11px] tabular-nums text-muted">{fmt(total)}</span>
@@ -127,7 +133,13 @@ export function FullscreenPlayer({ open, onClose }: { open: boolean; onClose: ()
               <IconButton active={shuffle} onClick={toggleShuffle} aria-label="Aleatorio"><Shuffle size={18} /></IconButton>
               <IconButton onClick={prev} aria-label="Anterior"><SkipBack size={22} /></IconButton>
               <IconButton variant="solid" size="lg" onClick={togglePlay} aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {buffering && isPlaying ? (
+                  <Loader2 size={24} className="animate-spin" />
+                ) : isPlaying ? (
+                  <Pause size={24} />
+                ) : (
+                  <Play size={24} />
+                )}
               </IconButton>
               <IconButton onClick={next} aria-label="Siguiente"><SkipForward size={22} /></IconButton>
               <IconButton active={repeat !== 'off'} onClick={cycleRepeat} aria-label={`Repetir: ${repeat}`}>

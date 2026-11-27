@@ -32,6 +32,10 @@ interface PlayerState {
   volume: number;
   currentTime: number;
   duration: number;
+  /** Segundos buffereados por delante (fin del rango cargado que cubre al reproductor). */
+  buffered: number;
+  /** El reproductor está esperando datos (red lenta / seek a zona no cargada). */
+  buffering: boolean;
   radioSeed: RadioSeed | null;
 
   playQueue: (tracks: PlayerTrack[], startIndex?: number) => void;
@@ -55,6 +59,8 @@ interface PlayerState {
   next: () => void;
   prev: () => void;
   setProgress: (currentTime: number, duration: number) => void;
+  setBuffered: (seconds: number) => void;
+  setBuffering: (buffering: boolean) => void;
   seekTo: (time: number) => void;
   setVolume: (volume: number) => void;
   cycleRepeat: () => void;
@@ -84,6 +90,8 @@ export const usePlayerStore = create<PlayerState>()(
       volume: 0.8,
       currentTime: 0,
       duration: 0,
+      buffered: 0,
+      buffering: false,
       radioSeed: null,
       _pendingSeek: null,
 
@@ -169,6 +177,8 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       setProgress: (currentTime, duration) => set({ currentTime, duration }),
+      setBuffered: (buffered) => set({ buffered }),
+      setBuffering: (buffering) => set({ buffering }),
       seekTo: (time) => set({ _pendingSeek: time, currentTime: time }),
       setVolume: (volume) => set({ volume: Math.min(1, Math.max(0, volume)) }),
       cycleRepeat: () =>
@@ -191,4 +201,16 @@ export const usePlayerStore = create<PlayerState>()(
 
 export function currentTrack(state: PlayerState): PlayerTrack | null {
   return state.index >= 0 && state.index < state.queue.length ? state.queue[state.index] : null;
+}
+
+/**
+ * Próxima pista que sonará, para precargarla. En modo aleatorio no es
+ * predecible, así que no se precarga (devuelve null).
+ */
+export function nextTrack(state: PlayerState): PlayerTrack | null {
+  if (state.index < 0 || state.shuffle) return null;
+  const ni = state.index + 1;
+  if (ni < state.queue.length) return state.queue[ni];
+  if (state.repeat === 'all' && state.queue.length > 0) return state.queue[0];
+  return null;
 }
