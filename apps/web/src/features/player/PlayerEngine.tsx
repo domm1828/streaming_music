@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { getOfflineBlob } from '../offline/offline-db';
-import { currentTrack, usePlayerStore } from './player-store';
+import { currentTrack, nextTrack, usePlayerStore } from './player-store';
 import { logPlay } from './use-log-play';
+import { bufferedAhead, isSaveData } from './media-utils';
 import { YouTubeProvider } from './YouTubeProvider';
 import { NativeVideoProvider } from './NativeVideoProvider';
 
@@ -27,6 +28,14 @@ export function PlayerEngine() {
   // Pistas que no usan el elemento <audio> (tienen su propio motor de video).
   const external = isYoutube || isNativeVideo;
 
+  // YouTube tiene su propio buffering interno: limpiar el indicador global.
+  useEffect(() => {
+    if (!isYoutube) return;
+    const { setBuffered, setBuffering } = usePlayerStore.getState();
+    setBuffered(0);
+    setBuffering(false);
+  }, [isYoutube, track?._id]);
+
   // Carga la fuente cuando cambia la pista (audio / hls).
   useEffect(() => {
     const audio = audioRef.current;
@@ -36,6 +45,10 @@ export function PlayerEngine() {
 
     hlsRef.current?.destroy();
     hlsRef.current = null;
+
+    // Nueva fuente: reiniciar el estado de buffer.
+    const { setBuffered, setBuffering } = usePlayerStore.getState();
+    setBuffered(0);
 
     const revokeObjectUrl = () => {
       if (objectUrlRef.current) {
@@ -47,6 +60,7 @@ export function PlayerEngine() {
     const isHls = track.srcType === 'hls' || track.src.endsWith('.m3u8');
     if (isHls && Hls.isSupported()) {
       revokeObjectUrl();
+      setBuffering(true);
       const hls = new Hls();
       hls.loadSource(track.src);
       hls.attachMedia(audio);
@@ -61,10 +75,13 @@ export function PlayerEngine() {
         if (loadedIdRef.current !== trackId || !audioRef.current) return;
         revokeObjectUrl();
         if (blob) {
+          // Copia local: no hay espera de red.
+          setBuffering(false);
           const url = URL.createObjectURL(blob);
           objectUrlRef.current = url;
           audioRef.current.src = url;
         } else {
+          setBuffering(true);
           audioRef.current.src = networkSrc;
         }
         audioRef.current.load();
@@ -172,13 +189,26 @@ export function PlayerEngine() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const { setProgress, next } = usePlayerStore.getState();
+  const { setProgress, setBuffered, setBuffering, next } = usePlayerStore.getState();
 
   return (
     <>
       <audio
         ref={audioRef}
-        onTimeUpdate={(e) => setProgress(e.currentTarget.currentTime, e.currentTarget.duration || 0)}
+        preload="auto"
+        onTimeUpdate={(e) => {
+          setProgress(e.currentTarget.currentTime, e.currentTarget.duration || 0);
+          setBuffered(bufferedAhead(e.currentTarget));
+        }}
+        onProgress={(e) => setBuffered(bufferedAhead(e.currentTarget))}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onSeeked={(e) => {
+          if (e.currentTarget.readyState >= 3) setBuffering(false);
+        }}
         onEnded={() => {
           if (usePlayerStore.getState().repeat === 'one') {
             const a = audioRef.current;
@@ -194,6 +224,51 @@ export function PlayerEngine() {
       />
       {isYoutube && track && <YouTubeProvider track={track} />}
       {isNativeVideo && track && <NativeVideoProvider track={track} />}
+      <MediaPrefetch />
     </>
+  );
+}
+
+const PREFETCH_OFFSCREEN = {
+  position: 'fixed',
+  left: -9999,
+  top: 0,
+  width: 1,
+  height: 1,
+  pointerEvents: 'none',
+  opacity: 0,
+} as const;
+
+/**
+ * Precarga la próxima pista de la cola para que la transición sea instantánea.
+ * Monta un elemento oculto que calienta la caché HTTP del navegador. Respeta el
+ * modo ahorro de datos, omite YouTube/HLS y usa la copia offline si ya existe.
+ */
+function MediaPrefetch() {
+  const next = usePlayerStore(nextTrack);
+  const [prefetch, setPrefetch] = useState<{ url: string; video: boolean } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPrefetch(null);
+    if (!next || !next.src) return;
+    if (next.srcType !== 'audio' && next.srcType !== 'video') return;
+    if (isSaveData()) return;
+    const url = next.src;
+    const video = next.srcType === 'video';
+    void getOfflineBlob(next._id).then((blob) => {
+      if (cancelled || blob) return; // ya está local
+      setPrefetch({ url, video });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [next?._id, next?.src, next?.srcType]);
+
+  if (!prefetch) return null;
+  return prefetch.video ? (
+    <video src={prefetch.url} preload="metadata" muted playsInline style={PREFETCH_OFFSCREEN} />
+  ) : (
+    <audio src={prefetch.url} preload="auto" style={PREFETCH_OFFSCREEN} />
   );
 }

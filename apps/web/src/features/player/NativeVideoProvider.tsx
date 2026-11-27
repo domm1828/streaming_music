@@ -1,6 +1,8 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
+import { Loader2 } from 'lucide-react';
 import { usePlayerStore, type PlayerTrack } from './player-store';
 import { logPlay } from './use-log-play';
+import { bufferedAhead } from './media-utils';
 
 /**
  * Motor para pistas de video nativas (archivo subido). Reproduce un <video> que
@@ -18,6 +20,9 @@ export function NativeVideoProvider({ track }: { track: PlayerTrack }) {
     if (!v || !src) return;
     if (loadedIdRef.current === track._id) return;
     loadedIdRef.current = track._id;
+    const { setBuffered, setBuffering } = usePlayerStore.getState();
+    setBuffered(0);
+    setBuffering(true);
     v.src = src;
     v.load();
     logPlay(track._id);
@@ -28,6 +33,7 @@ export function NativeVideoProvider({ track }: { track: PlayerTrack }) {
   const volume = usePlayerStore((s) => s.volume);
   const pendingSeek = usePlayerStore((s) => s._pendingSeek);
   const videoBox = usePlayerStore((s) => s.videoBox);
+  const buffering = usePlayerStore((s) => s.buffering);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -46,7 +52,7 @@ export function NativeVideoProvider({ track }: { track: PlayerTrack }) {
     usePlayerStore.getState().consumeSeek();
   }, [pendingSeek]);
 
-  const { setProgress, next } = usePlayerStore.getState();
+  const { setProgress, setBuffered, setBuffering, next } = usePlayerStore.getState();
 
   const style: CSSProperties = videoBox
     ? {
@@ -68,8 +74,21 @@ export function NativeVideoProvider({ track }: { track: PlayerTrack }) {
         ref={videoRef}
         poster={track.image ?? undefined}
         playsInline
+        preload="auto"
         className="h-full w-full bg-black object-contain"
-        onTimeUpdate={(e) => setProgress(e.currentTarget.currentTime, e.currentTarget.duration || 0)}
+        onTimeUpdate={(e) => {
+          setProgress(e.currentTarget.currentTime, e.currentTarget.duration || 0);
+          setBuffered(bufferedAhead(e.currentTarget));
+        }}
+        onProgress={(e) => setBuffered(bufferedAhead(e.currentTarget))}
+        onWaiting={() => setBuffering(true)}
+        onStalled={() => setBuffering(true)}
+        onSeeking={() => setBuffering(true)}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => setBuffering(false)}
+        onSeeked={(e) => {
+          if (e.currentTarget.readyState >= 3) setBuffering(false);
+        }}
         onEnded={() => {
           if (usePlayerStore.getState().repeat === 'one') {
             const v = videoRef.current;
@@ -82,6 +101,11 @@ export function NativeVideoProvider({ track }: { track: PlayerTrack }) {
           }
         }}
       />
+      {buffering && videoBox && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
+          <Loader2 className="animate-spin text-white/90" size={36} />
+        </div>
+      )}
     </div>
   );
 }
