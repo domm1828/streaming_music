@@ -17,9 +17,11 @@ interface DataTableProps<T> {
   onExport?: () => void;
   actions?: (row: T) => ReactNode;
   emptyText?: string;
+  /** Selección múltiple de filas (checkbox por fila + "seleccionar todo" de la página). */
+  selection?: { selected: Set<string>; onChange: (next: Set<string>) => void };
 }
 
-/** Tabla de administración reutilizable: columnas, búsqueda, paginación y export. */
+/** Tabla de administración reutilizable: columnas, búsqueda, paginación, export y selección. */
 export function DataTable<T>({
   columns,
   rows,
@@ -30,7 +32,26 @@ export function DataTable<T>({
   onExport,
   actions,
   emptyText = 'Sin resultados.',
+  selection,
 }: DataTableProps<T>) {
+  const pageKeys = rows.map(rowKey);
+  const allSelected = pageKeys.length > 0 && pageKeys.every((k) => selection?.selected.has(k));
+  const someSelected = pageKeys.some((k) => selection?.selected.has(k));
+  const toggleAll = () => {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    if (allSelected) pageKeys.forEach((k) => next.delete(k));
+    else pageKeys.forEach((k) => next.add(k));
+    selection.onChange(next);
+  };
+  const toggleOne = (key: string) => {
+    if (!selection) return;
+    const next = new Set(selection.selected);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    selection.onChange(next);
+  };
+  const extraCols = (actions ? 1 : 0) + (selection ? 1 : 0);
   return (
     <div className="space-y-3">
       {(search || onExport) && (
@@ -59,6 +80,18 @@ export function DataTable<T>({
         <table className="w-full text-left text-sm">
           <thead className="border-b border-divider bg-chip">
             <tr>
+              {selection && (
+                <th className="w-10 px-3 py-2">
+                  <input
+                    type="checkbox"
+                    aria-label="Seleccionar todo"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = !allSelected && someSelected; }}
+                    onChange={toggleAll}
+                    className="cursor-pointer"
+                  />
+                </th>
+              )}
               {columns.map((c) => (
                 <th key={c.key} className={`px-3 py-2 font-semibold ${c.className ?? ''}`}>
                   {c.header}
@@ -70,27 +103,41 @@ export function DataTable<T>({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center text-muted">
+                <td colSpan={columns.length + extraCols} className="px-3 py-6 text-center text-muted">
                   Cargando…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-6 text-center text-muted">
+                <td colSpan={columns.length + extraCols} className="px-3 py-6 text-center text-muted">
                   {emptyText}
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr key={rowKey(row)} className="border-b border-divider last:border-0 hover:bg-main/5">
-                  {columns.map((c) => (
-                    <td key={c.key} className={`px-3 py-2 ${c.className ?? ''}`}>
-                      {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '')}
-                    </td>
-                  ))}
-                  {actions && <td className="px-3 py-2 text-right">{actions(row)}</td>}
-                </tr>
-              ))
+              rows.map((row) => {
+                const key = rowKey(row);
+                return (
+                  <tr key={key} className="border-b border-divider last:border-0 hover:bg-main/5">
+                    {selection && (
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          aria-label="Seleccionar fila"
+                          checked={selection.selected.has(key)}
+                          onChange={() => toggleOne(key)}
+                          className="cursor-pointer"
+                        />
+                      </td>
+                    )}
+                    {columns.map((c) => (
+                      <td key={c.key} className={`px-3 py-2 ${c.className ?? ''}`}>
+                        {c.render ? c.render(row) : String((row as Record<string, unknown>)[c.key] ?? '')}
+                      </td>
+                    ))}
+                    {actions && <td className="px-3 py-2 text-right">{actions(row)}</td>}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
