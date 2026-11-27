@@ -9,6 +9,7 @@ import { Track, TrackSchema } from './schemas/track.schema';
 import { TrackPlay, TrackPlaySchema } from './schemas/track-play.schema';
 import { ListenUsage, ListenUsageSchema } from './schemas/listen-usage.schema';
 import { AudioService } from './audio.service';
+import { VideoService } from './video.service';
 import { AlbumsService } from './albums.service';
 import { ArtistsService } from './artists.service';
 import { GenresService } from './genres.service';
@@ -38,6 +39,7 @@ import { TracksController } from './tracks.controller';
   ],
   providers: [
     AudioService,
+    VideoService,
     GenresService,
     TagsService,
     ArtistsService,

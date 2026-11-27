@@ -18,6 +18,11 @@ export class CatalogListDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  /** Filtra pistas por tipo de fuente (p. ej. `video` para la sección de videos). */
+  @IsEnum(['audio', 'video', 'youtube', 'hls', 'external'])
+  @IsOptional()
+  type?: 'audio' | 'video' | 'youtube' | 'hls' | 'external';
 }
 
 export class CreateGenreDto {
@@ -219,9 +224,9 @@ export class CreateTrackDto {
   @IsOptional()
   src?: string;
 
-  @IsEnum(['audio', 'youtube', 'hls', 'external'])
+  @IsEnum(['audio', 'video', 'youtube', 'hls', 'external'])
   @IsOptional()
-  srcType?: 'audio' | 'youtube' | 'hls' | 'external';
+  srcType?: 'audio' | 'video' | 'youtube' | 'hls' | 'external';
 }
 
 export class UpdateTrackDto {
