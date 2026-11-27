@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Post,
@@ -18,9 +19,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user';
 import { SettingsService } from '../settings/settings.service';
 import { StorageService } from './storage.service';
+import { ImageGenService, extFromImageType } from './image-gen.service';
 import { FilesAdminService, kindFromMime } from './files-admin.service';
 import type { MediaKind } from './file-entry.schema';
 import { ListFilesDto } from './dto/list-files.dto';
+import { GenerateImageDto } from './dto/generate-image.dto';
 
 interface KindRules {
   subdir: string;
@@ -43,6 +46,7 @@ export class UploadsController {
     private readonly storage: StorageService,
     private readonly files: FilesAdminService,
     private readonly settings: SettingsService,
+    private readonly imageGen: ImageGenService,
   ) {}
 
   /** Sube solo imágenes (compatibilidad con los flujos existentes de carátula/portada). */
@@ -54,6 +58,18 @@ export class UploadsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.store(file, req, user, ['image']);
+  }
+
+  /** Genera una imagen con IA (Pollinations) y la guarda en el storage como una subida. */
+  @Post('uploads/generate')
+  async generate(@Body() dto: GenerateImageDto, @Req() req: Request, @CurrentUser() user: AuthenticatedUser) {
+    const { buffer, contentType } = await this.imageGen.generate(dto);
+    return this.persist(
+      buffer,
+      { mime: contentType, ext: extFromImageType(contentType), subdir: 'images', kind: 'image' },
+      req,
+      user,
+    );
   }
 
   /** Lista los medios subidos por el usuario actual (para el selector de biblioteca). */
@@ -97,15 +113,27 @@ export class UploadsController {
       throw new BadRequestException(`El archivo supera los ${maxMb} MB`);
     }
 
-    // Deduplicación: si ya existe un archivo idéntico, se reutiliza su registro.
-    const sha256 = createHash('sha256').update(file.buffer).digest('hex');
+    return this.persist(file.buffer, { mime: file.mimetype, ext, subdir: rules.subdir, kind }, req, user);
+  }
+
+  /**
+   * Guarda un buffer en el storage con deduplicación por hash y lo registra en la
+   * biblioteca. Compartido por la subida de archivos y la generación con IA.
+   */
+  private async persist(
+    buffer: Buffer,
+    meta: { mime: string; ext: string; subdir: string; kind: Exclude<MediaKind, 'other'> },
+    req: Request,
+    user: AuthenticatedUser,
+  ) {
+    const sha256 = createHash('sha256').update(buffer).digest('hex');
     const existing = await this.files.findByHash(sha256);
     if (existing) {
       return { url: existing.url, id: String(existing._id), kind: existing.kind, filename: existing.filename, size: existing.size, deduped: true };
     }
 
-    const filename = `${randomBytes(16).toString('hex')}${ext}`;
-    const stored = await this.storage.saveBuffer(file.buffer, rules.subdir, filename);
+    const filename = `${randomBytes(16).toString('hex')}${meta.ext}`;
+    const stored = await this.storage.saveBuffer(buffer, meta.subdir, filename);
 
     const proto = (req.headers['x-forwarded-proto'] as string) ?? req.protocol;
     const url = this.storage.publicUrl(stored.publicPath, `${proto}://${req.get('host')}`);
@@ -114,12 +142,12 @@ export class UploadsController {
       url,
       path: stored.publicPath,
       filename,
-      mime: file.mimetype,
-      size: file.size,
+      mime: meta.mime,
+      size: buffer.length,
       sha256,
-      kind,
+      kind: meta.kind,
       userId: user.id,
     });
-    return { url, id: String(entry._id), kind, filename, size: file.size, deduped: false };
+    return { url, id: String(entry._id), kind: meta.kind, filename, size: buffer.length, deduped: false };
   }
 }
