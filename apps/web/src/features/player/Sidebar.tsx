@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
-import { BadgeCheck, Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield, Upload } from 'lucide-react';
+import { BadgeCheck, Compass, Home, Library, ListMusic, Plus, Radio, Search, Shield, Upload, Video } from 'lucide-react';
 import { useAuth } from '../auth/use-auth';
 import { useMyPlaylists } from '../playlists/playlist-queries';
 import { CreatePlaylistDialog } from '../playlists/CreatePlaylistDialog';
@@ -37,6 +37,9 @@ export function Sidebar() {
           </NavLink>
           <NavLink to="/browse" className={navClass}>
             <Compass size={18} /> {t('nav.browse', 'Explorar')}
+          </NavLink>
+          <NavLink to="/videos" className={navClass}>
+            <Video size={18} /> {t('nav.videos', 'Videos')}
           </NavLink>
           <NavLink to="/radio" className={navClass}>
             <Radio size={18} /> {t('nav.radio', 'Radio')}

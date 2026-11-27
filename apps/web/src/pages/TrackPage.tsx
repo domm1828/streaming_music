@@ -34,7 +34,7 @@ export function TrackPage() {
       <MediaHeader
         image={data.image ?? data.album?.image ?? null}
         gradient="from-brand-primary to-brand-accent"
-        kicker="Pista"
+        kicker={data.srcType === 'video' ? 'Video' : 'Pista'}
         title={data.name}
         meta={
           <span>

@@ -246,8 +246,9 @@ function AlbumsTab() {
 function TracksTab() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [type, setType] = useState<'all' | 'audio' | 'video'>('all');
   const q = useDebounce(search, 300);
-  const { data, isLoading } = useAdminTracks(q, page);
+  const { data, isLoading } = useAdminTracks(q, page, type === 'all' ? undefined : type);
   const update = useUpdateTrack();
   const del = useDeleteTrack();
   const [lyricsFor, setLyricsFor] = useState<string | null>(null);
@@ -263,6 +264,19 @@ function TracksTab() {
   ];
   return (
     <div className="space-y-3">
+      <div className="flex items-center gap-1 rounded-full bg-chip p-1 text-sm w-fit">
+        {(['all', 'audio', 'video'] as const).map((opt) => (
+          <button
+            key={opt}
+            onClick={() => { setType(opt); setPage(1); }}
+            className={`rounded-full px-3 py-1 font-medium transition ${
+              type === opt ? 'bg-brand-primary text-white' : 'text-muted hover:text-main'
+            }`}
+          >
+            {opt === 'all' ? 'Todas' : opt === 'audio' ? 'Audio' : 'Video'}
+          </button>
+        ))}
+      </div>
       {selected.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-brand-secondary/40 bg-brand-primary/5 px-4 py-2 text-sm">
           <span className="font-medium">{selected.size} seleccionada(s)</span>

@@ -212,10 +212,10 @@ export interface AdminTrackDetail {
   genres: Genre[];
   tags: Tag[];
 }
-export function useAdminTracks(search: string, page: number) {
+export function useAdminTracks(search: string, page: number, type?: 'audio' | 'video') {
   return useQuery<Paginated<Track>>({
-    queryKey: ['admin-tracks', search, page],
-    queryFn: () => getList('tracks', { search, page, perPage: 20 }),
+    queryKey: ['admin-tracks', search, page, type ?? 'all'],
+    queryFn: () => getList('tracks', { search, page, perPage: 20, ...(type ? { type } : {}) }),
   });
 }
 export function useAdminTrack(id: string | null) {
